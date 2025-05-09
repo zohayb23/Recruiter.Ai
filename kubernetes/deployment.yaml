@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resume-embedding-service
+  labels:
+    app: resume-embedding
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: resume-embedding
+  template:
+    metadata:
+      labels:
+        app: resume-embedding
+    spec:
+      containers:
+      - name: resume-embedding
+        image: resume-embedding:latest
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "1000m"
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+        - name: data-storage
+          mountPath: /app/data
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-pvc
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resume-embedding-service
+spec:
+  selector:
+    app: resume-embedding
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer 
