@@ -10,6 +10,10 @@ This service processes resume data and generates word embeddings using the Sente
 - GitHub Actions CI/CD pipeline
 - Docker containerization
 
+## New Features
+
+- **PDF Resume Support:** Extracts text from PDF resumes in a specified directory and generates embeddings.
+
 ## Project Structure
 
 ```
@@ -41,6 +45,23 @@ pip install -r requirements.txt
 ```bash
 python src/embedding_processor.py
 ```
+
+## Usage
+
+1. Activate your virtual environment:
+   ```sh
+   .venv\Scripts\activate
+   ```
+2. Install dependencies:
+   ```sh
+   pip install -r requirements.txt
+   ```
+3. Place PDF resumes in the `pdf_resumes/` directory.
+4. Run the embedding processor:
+   ```sh
+   python src/embedding_processor.py --pdf_dir pdf_resumes
+   ```
+5. Embeddings will be saved to `data/embeddings/resume_embeddings.npy`.
 
 ## Deployment
 
