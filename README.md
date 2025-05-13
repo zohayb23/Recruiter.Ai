@@ -6,13 +6,19 @@ This service processes resume data and generates word embeddings using the Sente
 
 - Resume text processing and cleaning
 - Word embedding generation using Sentence Transformers
+- **CSV Resume Support:** Process resumes from CSV files
+- **PDF Resume Support:** Extracts text from PDF resumes in a specified directory and generates embeddings
+- **DOCX Resume Support:** Extracts text from DOCX resumes in a specified directory and generates embeddings
+- **Milvus Integration:** Stores generated embeddings in a Milvus vector database for scalable search and retrieval
 - Kubernetes deployment configuration
 - GitHub Actions CI/CD pipeline
 - Docker containerization
 
 ## New Features
 
-- **PDF Resume Support:** Extracts text from PDF resumes in a specified directory and generates embeddings.
+- **Milvus Integration:** Embeddings are now stored in Milvus for scalable vector search
+- **DOCX Resume Support:** DOCX files are now supported for extraction and embedding
+- **Cross-platform Setup:** Updated instructions for Windows and Mac
 
 ## Project Structure
 

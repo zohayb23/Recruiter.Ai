@@ -7,11 +7,44 @@ from pathlib import Path
 import pdfplumber
 import os
 import docx
+from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType, utility
 
 class ResumeEmbeddingProcessor:
-    def __init__(self, model_name='all-MiniLM-L6-v2'):
+    def __init__(self, model_name='all-MiniLM-L6-v2', milvus_host='localhost', milvus_port='19530'):
         self.model = SentenceTransformer(model_name)
+        self.milvus_host = milvus_host
+        self.milvus_port = milvus_port
+        self.collection_name = "resume_embeddings"
+        self._connect_milvus()
+        self._create_collection_if_not_exists()
         
+    def _connect_milvus(self):
+        connections.connect("default", host=self.milvus_host, port=self.milvus_port)
+
+    def _create_collection_if_not_exists(self):
+        if self.collection_name in utility.list_collections():
+            return
+        fields = [
+            FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=384),
+            FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
+            FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=16),
+        ]
+        schema = CollectionSchema(fields, description="Resume Embeddings")
+        Collection(self.collection_name, schema)
+
+    def insert_to_milvus(self, embeddings, metadata):
+        col = Collection(self.collection_name)
+        # embeddings: list of vectors, metadata: list of dicts with filename/source
+        data = [
+            [m.get('filename', '') for m in metadata],
+            [m.get('source', '') for m in metadata],
+            embeddings.tolist()
+        ]
+        print(f"[DEBUG] Inserting {len(embeddings)} embeddings into Milvus...")
+        result = col.insert([data[2], data[0], data[1]])
+        print(f"[DEBUG] Milvus insert result: {result}")
+
     def extract_text_from_pdf(self, pdf_path):
         """Extract text from a PDF file using pdfplumber."""
         text = ""
@@ -50,6 +83,7 @@ class ResumeEmbeddingProcessor:
                     text = self.extract_text_from_docx(docx_path)
                     data.append({'source': 'docx', 'filename': filename, 'text': text})
         self.data = data
+        print(f"[DEBUG] Loaded {len(data)} resumes.")
         return data
     
     def preprocess_text(self, text):
@@ -68,6 +102,7 @@ class ResumeEmbeddingProcessor:
             show_progress_bar=True,
             convert_to_tensor=True
         )
+        print(f"[DEBUG] Embeddings shape: {embeddings.shape}")
         return embeddings
     
     def save_embeddings(self, embeddings, output_path):
@@ -93,13 +128,16 @@ class ResumeEmbeddingProcessor:
         print("Saving embeddings...")
         self.save_embeddings(embeddings, output_path)
         
+        print("Inserting embeddings into Milvus...")
+        self.insert_to_milvus(embeddings, self.data)
+        
         return embeddings
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Resume Embedding Processor")
     parser.add_argument('--csv', type=str, default=None, help='Path to CSV file with resumes')
-    parser.add_argument('--pdf_dir', type=str, default=None, help='Directory containing PDF resumes')
+    parser.add_argument('--pdf_dir', type=str, default='C:\\Users\\zohay\\Recrutier.Ai\\pdf_resumes', help='Directory containing PDF resumes')
     parser.add_argument('--docx_dir', type=str, default=None, help='Directory containing DOCX resumes')
     parser.add_argument('--output', type=str, default='data/embeddings/resume_embeddings.npy', help='Output path for embeddings')
     args = parser.parse_args()
