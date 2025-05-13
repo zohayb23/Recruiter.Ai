@@ -121,6 +121,10 @@ python src/embedding_processor.py
   python src/embedding_processor.py --csv UpdatedResumeDataSet.csv --pdf_dir pdf_resumes --docx_dir docx_resumes
   ```
 
+> **Note:**
+> The default paths for resume files (PDF, CSV, DOCX) in `embedding_processor.py` are set for the original developer's environment.
+> If you are running this project on your own machine, please provide your own data paths using the `--pdf_dir`, `--csv`, or `--docx_dir` command-line arguments, or update the defaults in the script to match your local setup.
+
 ## Deployment
 
 The project includes Kubernetes configurations and can be deployed to any Kubernetes cluster. The CI/CD pipeline automatically builds and deploys to EKS when changes are pushed to the main branch.
