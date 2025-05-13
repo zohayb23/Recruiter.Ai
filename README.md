@@ -46,22 +46,74 @@ pip install -r requirements.txt
 python src/embedding_processor.py
 ```
 
-## Usage
+## Installation
 
-1. Activate your virtual environment:
+### Windows
+
+1. Install Python 3.10 (recommended):
+   - Download from https://www.python.org/downloads/release/python-3100/
+2. Clone the repository:
    ```sh
+   git clone https://github.com/zohayb23/Recruiter.Ai.git
+   cd Recruiter.Ai
+   ```
+3. Create and activate a virtual environment:
+   ```sh
+   python -m venv .venv
    .venv\Scripts\activate
    ```
-2. Install dependencies:
+4. Install dependencies:
    ```sh
    pip install -r requirements.txt
    ```
-3. Place PDF resumes in the `pdf_resumes/` directory.
-4. Run the embedding processor:
+5. Place your resumes in the appropriate folders:
+   - PDFs: `pdf_resumes/`
+   - DOCX: `docx_resumes/`
+   - CSV: Place your file in the project root
+
+### Mac
+
+1. Install Python 3.10 (recommended):
+   - Download from https://www.python.org/downloads/release/python-3100/
+   - Or use Homebrew: `brew install python@3.10`
+2. (Optional) Install Homebrew if you don't have it: https://brew.sh/
+3. Clone the repository:
    ```sh
-   python src/embedding_processor.py --pdf_dir pdf_resumes
+   git clone https://github.com/zohayb23/Recruiter.Ai.git
+   cd Recruiter.Ai
    ```
-5. Embeddings will be saved to `data/embeddings/resume_embeddings.npy`.
+4. Create and activate a virtual environment:
+   ```sh
+   python3.10 -m venv .venv
+   source .venv/bin/activate
+   ```
+5. Install dependencies:
+   ```sh
+   pip install -r requirements.txt
+   ```
+6. Place your resumes in the appropriate folders:
+   - PDFs: `pdf_resumes/`
+   - DOCX: `docx_resumes/`
+   - CSV: Place your file in the project root
+
+## Usage
+
+- **PDF resumes:**
+  ```sh
+  python src/embedding_processor.py --pdf_dir pdf_resumes
+  ```
+- **DOCX resumes:**
+  ```sh
+  python src/embedding_processor.py --docx_dir docx_resumes
+  ```
+- **CSV resumes:**
+  ```sh
+  python src/embedding_processor.py --csv UpdatedResumeDataSet.csv
+  ```
+- **Any combination:**
+  ```sh
+  python src/embedding_processor.py --csv UpdatedResumeDataSet.csv --pdf_dir pdf_resumes --docx_dir docx_resumes
+  ```
 
 ## Deployment
 
