@@ -16,8 +16,10 @@ This service processes resume data and generates word embeddings using the Sente
 
 ## New Features
 
-- **Milvus Integration:** Embeddings are now stored in Milvus for scalable vector search
-- **DOCX Resume Support:** DOCX files are now supported for extraction and embedding
+- **Relative Resume Directories:** By default, the application now looks for resumes in the `csv_resumes`, `pdf_resumes`, and `docx_resumes` folders in the project root. No need to edit code for your local path—just place your files in these folders or specify your own paths with command-line arguments.
+- **Batch CSV Processing:** The application will now process all `.csv` files in the `csv_resumes` directory, not just a single file.
+- **Milvus Integration:** Embeddings are stored in Milvus for scalable vector search
+- **DOCX Resume Support:** DOCX files are supported for extraction and embedding
 - **Cross-platform Setup:** Updated instructions for Windows and Mac
 
 ## Project Structure
@@ -75,7 +77,7 @@ python src/embedding_processor.py
 5. Place your resumes in the appropriate folders:
    - PDFs: `pdf_resumes/`
    - DOCX: `docx_resumes/`
-   - CSV: Place your file in the project root
+   - CSV: Place your `.csv` files in the `csv_resumes/` folder
 
 ### Mac
 
@@ -100,7 +102,7 @@ python src/embedding_processor.py
 6. Place your resumes in the appropriate folders:
    - PDFs: `pdf_resumes/`
    - DOCX: `docx_resumes/`
-   - CSV: Place your file in the project root
+   - CSV: Place your `.csv` files in the `csv_resumes/` folder
 
 ## Usage
 
@@ -114,16 +116,15 @@ python src/embedding_processor.py
   ```
 - **CSV resumes:**
   ```sh
-  python src/embedding_processor.py --csv UpdatedResumeDataSet.csv
+  python src/embedding_processor.py --csv csv_resumes
   ```
 - **Any combination:**
   ```sh
-  python src/embedding_processor.py --csv UpdatedResumeDataSet.csv --pdf_dir pdf_resumes --docx_dir docx_resumes
+  python src/embedding_processor.py --csv csv_resumes --pdf_dir pdf_resumes --docx_dir docx_resumes
   ```
 
 > **Note:**
-> The default paths for resume files (PDF, CSV, DOCX) in `embedding_processor.py` are set for the original developer's environment.
-> If you are running this project on your own machine, please provide your own data paths using the `--pdf_dir`, `--csv`, or `--docx_dir` command-line arguments, or update the defaults in the script to match your local setup.
+> By default, the application will look for resumes in the `csv_resumes`, `pdf_resumes`, and `docx_resumes` folders. You can override these by providing your own paths using the `--pdf_dir`, `--csv`, or `--docx_dir` command-line arguments.
 
 ## Deployment
 
