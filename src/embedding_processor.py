@@ -66,10 +66,19 @@ class ResumeEmbeddingProcessor:
         """
         data = []
         if csv_path:
-            df = pd.read_csv(csv_path)
-            if 'Resume' in df.columns:
-                for idx, row in df.iterrows():
-                    data.append({'source': 'csv', 'filename': None, 'text': row['Resume']})
+            if os.path.isdir(csv_path):
+                for filename in os.listdir(csv_path):
+                    if filename.lower().endswith('.csv'):
+                        file_path = os.path.join(csv_path, filename)
+                        df = pd.read_csv(file_path)
+                        if 'Resume' in df.columns:
+                            for idx, row in df.iterrows():
+                                data.append({'source': 'csv', 'filename': filename, 'text': row['Resume']})
+            elif os.path.isfile(csv_path):
+                df = pd.read_csv(csv_path)
+                if 'Resume' in df.columns:
+                    for idx, row in df.iterrows():
+                        data.append({'source': 'csv', 'filename': None, 'text': row['Resume']})
         if pdf_dir:
             for filename in os.listdir(pdf_dir):
                 if filename.lower().endswith('.pdf'):
@@ -136,9 +145,9 @@ class ResumeEmbeddingProcessor:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Resume Embedding Processor")
-    parser.add_argument('--csv', type=str, default=None, help='Path to CSV file with resumes')
-    parser.add_argument('--pdf_dir', type=str, default='C:\\Users\\zohay\\Recrutier.Ai\\pdf_resumes', help='Directory containing PDF resumes')
-    parser.add_argument('--docx_dir', type=str, default=None, help='Directory containing DOCX resumes')
+    parser.add_argument('--csv', type=str, default='csv_resumes', help='Path to CSV file or directory with resumes (default: ./csv_resumes)')
+    parser.add_argument('--pdf_dir', type=str, default='pdf_resumes', help='Directory containing PDF resumes (default: ./pdf_resumes)')
+    parser.add_argument('--docx_dir', type=str, default='docx_resumes', help='Directory containing DOCX resumes (default: ./docx_resumes)')
     parser.add_argument('--output', type=str, default='data/embeddings/resume_embeddings.npy', help='Output path for embeddings')
     args = parser.parse_args()
 
