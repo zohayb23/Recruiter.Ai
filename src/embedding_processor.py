@@ -16,6 +16,10 @@ class ResumeEmbeddingProcessor:
         self.milvus_port = milvus_port
         self.collection_name = "resume_embeddings"
         self._connect_milvus()
+        # Drop the collection if it exists so we can create it with the new schema
+        if self.collection_name in utility.list_collections():
+            print(f"[INFO] Dropping existing collection '{self.collection_name}' to update schema.")
+            utility.drop_collection(self.collection_name)
         self._create_collection_if_not_exists()
         
     def _connect_milvus(self):
@@ -35,14 +39,13 @@ class ResumeEmbeddingProcessor:
 
     def insert_to_milvus(self, embeddings, metadata):
         col = Collection(self.collection_name)
-        # embeddings: list of vectors, metadata: list of dicts with filename/source
         data = [
+            embeddings.tolist(),
             [m.get('filename', '') for m in metadata],
             [m.get('source', '') for m in metadata],
-            embeddings.tolist()
         ]
         print(f"[DEBUG] Inserting {len(embeddings)} embeddings into Milvus...")
-        result = col.insert([data[2], data[0], data[1]])
+        result = col.insert(data)
         print(f"[DEBUG] Milvus insert result: {result}")
 
     def extract_text_from_pdf(self, pdf_path):
@@ -126,6 +129,17 @@ class ResumeEmbeddingProcessor:
         # Save embeddings
         np.save(output_path, embeddings)
         
+    def create_embedding_index(self):
+        col = Collection(self.collection_name)
+        index_params = {
+            "metric_type": "L2",
+            "index_type": "IVF_FLAT",
+            "params": {"nlist": 128}
+        }
+        print("[DEBUG] Creating index on 'embedding' field...")
+        col.create_index(field_name="embedding", index_params=index_params)
+        print("[DEBUG] Index created!")
+
     def process_resumes(self, csv_path=None, pdf_dir=None, docx_dir=None, output_path='data/embeddings/resume_embeddings.npy'):
         """Main processing pipeline"""
         print("Loading data...")
@@ -139,6 +153,9 @@ class ResumeEmbeddingProcessor:
         
         print("Inserting embeddings into Milvus...")
         self.insert_to_milvus(embeddings, self.data)
+        
+        print("Creating index on embedding field...")
+        self.create_embedding_index()
         
         return embeddings
 

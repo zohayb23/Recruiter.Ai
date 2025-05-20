@@ -43,5 +43,15 @@ services:
       - etcd
       - minio
 
+  attu:
+    image: zilliz/attu:v2.2.7
+    container_name: attu
+    environment:
+      - MILVUS_URL=http://milvus-standalone:19530
+    ports:
+      - "3000:3000"
+    depends_on:
+      - milvus-standalone
+
 volumes:
   milvus_data:
