@@ -21,6 +21,7 @@ This service processes resume data and generates word embeddings using the Sente
 - **Milvus Integration:** Embeddings are stored in Milvus for scalable vector search
 - **DOCX Resume Support:** DOCX files are supported for extraction and embedding
 - **Cross-platform Setup:** Updated instructions for Windows and Mac
+- **Dense Search Filtering by Source:** You can now filter dense search results by resume source (pdf, docx, csv) using the `ONLY_PDF_AND_DOCX` parameter in `dense_search.py`. This allows you to focus your search on specific resume types for more targeted results.
 
 ## Project Structure
 
@@ -122,6 +123,21 @@ python src/embedding_processor.py
   ```sh
   python src/embedding_processor.py --csv csv_resumes --pdf_dir pdf_resumes --docx_dir docx_resumes
   ```
+
+### Dense Search Filtering by Source
+
+You can control which resume types are included in dense search results using the `ONLY_PDF_AND_DOCX` parameter in `dense_search.py`:
+
+- To search **only PDF and DOCX resumes** (exclude CSV):
+  ```python
+  ONLY_PDF_AND_DOCX = True
+  ```
+- To search **all resume types** (CSV, PDF, DOCX):
+  ```python
+  ONLY_PDF_AND_DOCX = False
+  ```
+
+This uses the Milvus `expr` parameter to efficiently filter results at the database level.
 
 > **Note:**
 > By default, the application will look for resumes in the `csv_resumes`, `pdf_resumes`, and `docx_resumes` folders. You can override these by providing your own paths using the `--pdf_dir`, `--csv`, or `--docx_dir` command-line arguments.
