@@ -81,7 +81,7 @@ class ResumeEmbeddingProcessor:
                 df = pd.read_csv(csv_path)
                 if 'Resume' in df.columns:
                     for idx, row in df.iterrows():
-                        data.append({'source': 'csv', 'filename': None, 'text': row['Resume']})
+                        data.append({'source': 'csv', 'filename': f"{os.path.basename(csv_path)}_{idx}", 'text': row['Resume']})
         if pdf_dir:
             for filename in os.listdir(pdf_dir):
                 if filename.lower().endswith('.pdf'):
