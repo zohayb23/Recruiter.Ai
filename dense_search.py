@@ -9,9 +9,11 @@ query = "Java"  # Change this to your search phrase
 embedding = model.encode([query])
 
 collection = Collection("resume_embeddings")
+# Load the collection into memory before searching
+collection.load()
 
 # Set this to True to only search pdf and docx resumes, False to search all
-ONLY_PDF_AND_DOCX = True
+ONLY_PDF_AND_DOCX = False
 
 expr = None
 if ONLY_PDF_AND_DOCX:
