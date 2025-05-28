@@ -10,6 +10,7 @@ This service processes resume data and generates word embeddings using the Sente
 - **PDF Resume Support:** Extracts text from PDF resumes in a specified directory and generates embeddings
 - **DOCX Resume Support:** Extracts text from DOCX resumes in a specified directory and generates embeddings
 - **Milvus Integration:** Stores generated embeddings in a Milvus vector database for scalable search and retrieval
+- **Skill Rating System:** Advanced matching system that rates resumes against job descriptions with detailed skill analysis
 - Kubernetes deployment configuration
 - GitHub Actions CI/CD pipeline
 - Docker containerization
@@ -22,13 +23,16 @@ This service processes resume data and generates word embeddings using the Sente
 - **DOCX Resume Support:** DOCX files are supported for extraction and embedding
 - **Cross-platform Setup:** Updated instructions for Windows and Mac
 - **Dense Search Filtering by Source:** You can now filter dense search results by resume source (pdf, docx, csv) using the `ONLY_PDF_AND_DOCX` parameter in `dense_search.py`. This allows you to focus your search on specific resume types for more targeted results.
+- **Skill Rating System:** New intelligent system that analyzes resumes against job descriptions, providing detailed skill matches and overall compatibility scores.
 
 ## Project Structure
 
 ```
 .
 ├── src/
-│   └── embedding_processor.py
+│   ├── embedding_processor.py
+│   ├── skill_ratings.py
+│   └── test_skill_ratings.py
 ├── kubernetes/
 │   └── deployment.yaml
 ├── .github/
@@ -139,8 +143,49 @@ You can control which resume types are included in dense search results using th
 
 This uses the Milvus `expr` parameter to efficiently filter results at the database level.
 
+### Skill Rating System
+
+The Skill Rating System provides advanced resume matching against job descriptions. To use this feature:
+
+1. Ensure your resumes are processed and Milvus is running:
+   ```sh
+   docker compose -f docker-compose-milvus.yml up -d
+   python src/embedding_processor.py --csv csv_resumes --docx_dir docx_resumes
+   ```
+
+2. Use the skill rating system:
+   ```sh
+   python test_skill_ratings.py
+   ```
+
+The system will:
+- Analyze job descriptions for required skills and qualifications
+- Match resumes against these requirements
+- Provide detailed skill-by-skill matching scores
+- Calculate overall compatibility ratings
+- Rank candidates based on their match to the job requirements
+
+You can customize job descriptions and skill requirements by modifying the test cases in `test_skill_ratings.py`.
+
+Example output:
+```
+=== Testing Senior Software Engineer Role ===
+Job Description:
+[Your job description here]
+
+Top Matches:
+Candidate #1:
+- File: resume1.pdf
+- Overall Score: 0.85
+- Key Matches:
+  * JavaScript/TypeScript: Strong match
+  * React.js: Found
+  * Cloud Platforms: AWS experience
+  [etc...]
+```
+
 > **Note:**
-> By default, the application will look for resumes in the `csv_resumes`, `pdf_resumes`, and `docx_resumes` folders. You can override these by providing your own paths using the `--pdf_dir`, `--csv`, or `--docx_dir` command-line arguments.
+> The skill rating system uses advanced NLP techniques to understand variations in skill descriptions and technical terminology, providing more accurate matches than simple keyword matching.
 
 ## Deployment
 
