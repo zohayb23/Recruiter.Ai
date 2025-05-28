@@ -5,7 +5,7 @@ from pymilvus import Collection, connections
 connections.connect(alias="default", host="localhost", port="19530")
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
-query = "Java"  # Change this to your search phrase
+query = "experienced with Epic healthcare systems, Epic EMR, and Epic modules"  # Change this to your search phrase
 embedding = model.encode([query])
 
 collection = Collection("resume_embeddings")
@@ -28,14 +28,19 @@ results = collection.search(
     expr=expr
 )
 
-print(f"Top 100 results for query '{query}':")
+print(f"\nTop results for query: '{query}'\n")
 filenames = set()
 for idx, hit in enumerate(results[0]):
+    if idx >= 5:  # Only show top 5 results
+        break
     print(f"Result {idx+1}:")
-    for field in hit.entity.keys():
-        print(f"  {field}: {hit.entity.get(field)}")
-    print(f"  Score: {hit.distance}")
-    print("-" * 40)
-    filenames.add(hit.entity.get("filename"))
+    filename = hit.entity.get("filename")
+    source = hit.entity.get("source")
+    score = hit.distance
+    print(f"  File: {filename}")
+    print(f"  Source: {source}")
+    print(f"  Match Score: {score:.4f}")
+    print("-" * 60)
+    filenames.add(filename)
 if len(filenames) == 1:
     print("[WARNING] All returned results have the same filename. This may indicate duplicate embeddings or data issues.") 
