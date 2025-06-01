@@ -244,7 +244,7 @@ def main():
     create_collection()
     insert_resume_data()
     # Example search query
-    query = "Python"
+    query = "Salesforce professional with 50+ years"
     results = search_resumes(query, top_k=500)  # Get more results to allow filtering by source
 
     if not results:

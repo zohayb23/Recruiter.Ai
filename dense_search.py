@@ -5,7 +5,7 @@ from pymilvus import Collection, connections
 connections.connect(alias="default", host="localhost", port="19530")
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
-query = "experienced with Epic healthcare systems, Epic EMR, and Epic modules"  # Change this to your search phrase
+query = "Salesforce professional with 50+ years"  # Change this to your search phrase
 embedding = model.encode([query])
 
 collection = Collection("resume_embeddings")
