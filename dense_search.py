@@ -12,20 +12,13 @@ collection = Collection("resume_embeddings")
 # Load the collection into memory before searching
 collection.load()
 
-# Set this to True to only search pdf and docx resumes, False to search all
-ONLY_PDF_AND_DOCX = False
-
-expr = None
-if ONLY_PDF_AND_DOCX:
-    expr = 'source in ["pdf", "docx"]'
-
+# Search across all resume types
 results = collection.search(
     data=embedding,
     anns_field="embedding",
     param={"metric_type": "L2", "params": {"nprobe": 10}},
     limit=100,
-    output_fields=["filename", "source"],
-    expr=expr
+    output_fields=["filename", "source"]
 )
 
 print(f"\nTop results for query: '{query}'\n")
