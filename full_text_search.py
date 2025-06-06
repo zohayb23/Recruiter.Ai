@@ -1,6 +1,6 @@
 import sys
 import os
-from pymilvus import MilvusClient, DataType, Function, FunctionType
+from pymilvus import connections, Collection, DataType, utility, CollectionSchema, FieldSchema
 from sentence_transformers import SentenceTransformer
 from collections import Counter
 import re
@@ -16,64 +16,59 @@ PORT = "19530"
 
 def get_milvus_client():
     """Get a Milvus client instance."""
-    return MilvusClient(
-        uri=f"http://{HOST}:{PORT}",
-        token="root:Milvus"
-    )
+    try:
+        connections.connect(
+            alias="default",
+            host=HOST,
+            port=PORT
+        )
+        print("[INFO] Client connected successfully")
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to connect to Milvus: {e}")
+        return False
 
 def create_collection():
     """Create a collection with proper schema for full-text search."""
-    client = get_milvus_client()
+    get_milvus_client()
     
     # Drop collection if it exists
-    if COLLECTION_NAME in client.list_collections():
+    if COLLECTION_NAME in utility.list_collections():
         print(f"[INFO] Dropping existing collection {COLLECTION_NAME}")
-        client.drop_collection(COLLECTION_NAME)
+        utility.drop_collection(COLLECTION_NAME)
     
     # Create schema
-    schema = MilvusClient.create_schema()
-    
-    # Add fields
-    schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True, auto_id=True)
-    schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=65535, enable_analyzer=True)
-    schema.add_field(field_name="sparse", datatype=DataType.SPARSE_FLOAT_VECTOR, is_nullable=True)
-    schema.add_field(field_name="filename", datatype=DataType.VARCHAR, max_length=256)
-    schema.add_field(field_name="source", datatype=DataType.VARCHAR, max_length=32)
-    
-    # Add BM25 function
-    bm25_function = Function(
-        name="text_bm25_emb",
-        input_field_names=["text"],
-        output_field_names=["sparse"],
-        function_type=FunctionType.BM25
-    )
-    schema.add_function(bm25_function)
+    fields = [
+        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
+        FieldSchema(name="sparse", dtype=DataType.FLOAT_VECTOR, dim=384),
+        FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
+        FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=32)
+    ]
+    schema = CollectionSchema(fields=fields)
     
     # Create collection
     try:
-        client.create_collection(
-            collection_name=COLLECTION_NAME,
-            schema=schema
+        collection = Collection(
+            name=COLLECTION_NAME,
+            schema=schema,
+            using='default'
         )
         print(f"[INFO] Created collection {COLLECTION_NAME}")
         
         # Create index after collection creation
-        index_params = MilvusClient.prepare_index_params()
-        index_params.add_index(
-            field_name="sparse",
-            index_type="SPARSE_INVERTED_INDEX",
-            metric_type="BM25",
-            params={
-                "inverted_index_algo": "DAAT_MAXSCORE",
-                "bm25_k1": 1.2,
-                "bm25_b": 0.75
+        index_params = {
+            "index_type": "IVF_FLAT",
+            "metric_type": "L2",
+            "params": {
+                "nlist": 1024
             }
-        )
-        client.create_index(COLLECTION_NAME, index_params)
+        }
+        collection.create_index("sparse", index_params)
         print("[INFO] Created index for sparse field")
         
         # Verify collection was created with correct schema
-        collection_info = client.describe_collection(COLLECTION_NAME)
+        collection_info = collection.describe()
         print("\nCollection Schema:")
         for field in collection_info['fields']:
             print(field)  # Print the whole field dict for debugging
@@ -105,7 +100,7 @@ def load_resume_data():
     if not data:
         print("[ERROR] No data loaded from any source!")
         return []
-        
+    
     print(f"[DEBUG] Loaded {len(data)} resumes for fulltext collection")
     print(f"[DEBUG] Source counts: {Counter([item.get('source', '').lower() for item in data])}")
     
@@ -130,7 +125,8 @@ def load_resume_data():
 
 def insert_resume_data():
     """Insert resume data into the collection."""
-    client = get_milvus_client()
+    get_milvus_client()
+    collection = Collection(COLLECTION_NAME)
     data = load_resume_data()
     if not data:
         print("[ERROR] No data found to insert")
@@ -139,14 +135,22 @@ def insert_resume_data():
     print(f"[INFO] Starting data insertion process")
     print(f"[INFO] Raw data count: {len(data)}")
     
+    # Initialize the sentence transformer model
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    
     insert_data = []
     skipped_count = 0
     for item in data:
         if 'text' not in item or not item['text']:
             skipped_count += 1
             continue
+            
+        # Generate embedding for the text
+        text_embedding = model.encode(item['text'])
+        
         insert_data.append({
             'text': item['text'],
+            'sparse': text_embedding.tolist(),  # Convert numpy array to list
             'filename': item.get('filename', ''),
             'source': item.get('source', '')
         })
@@ -162,31 +166,32 @@ def insert_resume_data():
     total_inserted = 0
     for i in range(0, len(insert_data), batch_size):
         batch = insert_data[i:i + batch_size]
-        result = client.insert(COLLECTION_NAME, batch)
-        total_inserted += result['insert_count']
+        result = collection.insert(batch)
+        total_inserted += result.insert_count
     
     # Force flush to ensure data is persisted
-    client.flush(COLLECTION_NAME)
+    collection.flush()
     
     # Verify insertion
-    stats = client.get_collection_stats(COLLECTION_NAME)
+    num_entities = collection.num_entities
     print(f"[INFO] Successfully inserted {total_inserted} documents")
     
-    if stats['row_count'] == 0:
+    if num_entities == 0:
         print("[ERROR] Insertion appeared to succeed but collection is empty")
         return False
         
     # Load collection to make it searchable
-    client.load_collection(COLLECTION_NAME)
+    collection.load()
     
     return True
 
 def ensure_collection_ready():
     """Ensure the collection exists and has proper index."""
-    client = get_milvus_client()
+    get_milvus_client()
+    collection = Collection(COLLECTION_NAME)
     
     # Check if collection exists
-    if COLLECTION_NAME not in client.list_collections():
+    if COLLECTION_NAME not in utility.list_collections():
         print(f"[INFO] Collection {COLLECTION_NAME} does not exist. Creating...")
         if not create_collection():
             return False
@@ -195,33 +200,27 @@ def ensure_collection_ready():
     
     # Check if index exists
     try:
-        index_info = client.describe_index(COLLECTION_NAME, "sparse")
-        if not index_info:
+        index = collection.index()
+        if not index:
             print("[INFO] Index not found. Creating...")
-            index_params = MilvusClient.prepare_index_params()
-            index_params.add_index(
-                field_name="sparse",
-                index_type="SPARSE_INVERTED_INDEX",
-                metric_type="BM25",
-                params={
-                    "inverted_index_algo": "DAAT_MAXSCORE",
-                    "bm25_k1": 1.2,
-                    "bm25_b": 0.75
+            index_params = {
+                "index_type": "IVF_FLAT",
+                "metric_type": "L2",
+                "params": {
+                    "nlist": 1024
                 }
-            )
-            client.create_index(COLLECTION_NAME, index_params)
+            }
+            collection.create_index("sparse", index_params)
             print("[INFO] Index created successfully")
     except Exception as e:
         print(f"[ERROR] Failed to check/create index: {e}")
         return False
     
-    # Load collection only if not already loaded
+    # Load collection
     try:
-        load_state = client.get_load_state(COLLECTION_NAME)
-        if load_state != "Loaded":
-            print(f"[INFO] Loading collection {COLLECTION_NAME}...")
-            client.load_collection(COLLECTION_NAME)
-            print("[INFO] Collection loaded successfully")
+        print(f"[INFO] Loading collection {COLLECTION_NAME}...")
+        collection.load()
+        print("[INFO] Collection loaded successfully")
         return True
     except Exception as e:
         print(f"[ERROR] Failed to load collection: {e}")
@@ -229,31 +228,38 @@ def ensure_collection_ready():
 
 def search_resumes(query, top_k=10, source=None):
     """Search resumes using full-text search."""
-    client = get_milvus_client()
+    # Handle empty or whitespace-only queries
+    if not query or not query.strip():
+        return []
+        
+    get_milvus_client()
     
     # Ensure collection is ready
     if not ensure_collection_ready():
         return []
     
-    # Search parameters for BM25
+    # Initialize the sentence transformer model
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    
+    # Generate embedding for the query
+    query_embedding = model.encode(query)
+    
+    # Search parameters for vector search
     search_params = {
-        'metric_type': 'BM25',
-        'params': {
-            'drop_ratio_search': 0.1,
-            'search_mode': 'BM25',
-            'bm25_k1': 1.5,
-            'bm25_b': 0.8
+        "metric_type": "L2",
+        "params": {
+            "nprobe": 10  # Number of clusters to search
         }
     }
     
     try:
+        collection = Collection(COLLECTION_NAME)
         # First get all results
-        results = client.search(
-            collection_name=COLLECTION_NAME,
-            data=[query],
+        results = collection.search(
+            data=[query_embedding.tolist()],
             anns_field='sparse',
+            param=search_params,
             limit=top_k * 3,  # Get more results to allow for better filtering
-            search_params=search_params,
             output_fields=['text', 'filename', 'source']
         )
         
@@ -261,20 +267,22 @@ def search_resumes(query, top_k=10, source=None):
         formatted_results = []
         seen_filenames = set()  # Track unique filenames
         
-        for hits in results:
-            for hit in hits:
-                filename = hit.entity.get('filename', '')
+        # In pymilvus 2.3.3, results is a list of hits
+        for hit in results[0]:  # Get first query's results
+            try:
+                # Access entity fields directly
+                filename = hit.entity.filename
                 # Skip if we've already seen this filename
                 if filename in seen_filenames:
                     continue
                     
-                text = hit.entity.get('text', '')
+                text = hit.entity.text
                 # Find the most relevant snippet containing the search terms
                 snippet = get_relevant_snippet(text, query)
                 
                 result = {
                     'filename': filename,
-                    'source': hit.entity.get('source', ''),
+                    'source': hit.entity.source,
                     'content': snippet,
                     'score': hit.score
                 }
@@ -285,6 +293,9 @@ def search_resumes(query, top_k=10, source=None):
                     seen_filenames.add(filename)
                     if len(formatted_results) >= top_k:
                         break
+            except Exception as e:
+                print(f"[WARNING] Skipping result due to error: {e}")
+                continue
         
         return formatted_results[:top_k]  # Return only top_k results
         

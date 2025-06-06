@@ -1,5 +1,6 @@
 import unittest
-from full_text_search import get_milvus_client, create_collection, search_resumes, insert_resume_data
+from pymilvus import connections, Collection
+from full_text_search import create_collection, search_resumes, insert_resume_data, COLLECTION_NAME, HOST, PORT
 
 class TestFullTextEdgeCases(unittest.TestCase):
     @classmethod
@@ -9,13 +10,21 @@ class TestFullTextEdgeCases(unittest.TestCase):
         print("Setting up Full Text Search Test Environment".center(80))
         print("="*80)
         
+        # Connect to Milvus
+        try:
+            connections.connect(
+                alias="default",
+                host=HOST,
+                port=PORT
+            )
+            print("[INFO] Client connected successfully")
+        except Exception as e:
+            print(f"[ERROR] Failed to connect to Milvus: {e}")
+            raise
+        
         # Create collection
         create_collection()
         print("[INFO] Collection created successfully")
-        
-        # Get client
-        cls.client = get_milvus_client()
-        print("[INFO] Client connected successfully")
         
         # Insert data
         print("\n[INFO] Starting data insertion...")
@@ -24,10 +33,11 @@ class TestFullTextEdgeCases(unittest.TestCase):
             raise Exception("Data insertion failed")
         
         # Verify data was inserted
-        stats = cls.client.get_collection_stats("resume_fulltext")
-        print(f"[INFO] Collection now contains {stats['row_count']} documents")
+        collection = Collection(COLLECTION_NAME)
+        stats = collection.describe()
+        print(f"[INFO] Collection now contains {collection.num_entities} documents")
         
-        if stats['row_count'] == 0:
+        if collection.num_entities == 0:
             print("[ERROR] No data was inserted!")
             raise Exception("No data in collection")
         
@@ -35,7 +45,7 @@ class TestFullTextEdgeCases(unittest.TestCase):
         print("-"*80)
         
         # Load collection once at the start
-        cls.client.load_collection("resume_fulltext")
+        collection.load()
         print("[INFO] Collection loaded for testing")
 
     def print_test_header(self, test_name):
