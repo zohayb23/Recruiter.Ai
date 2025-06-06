@@ -33,13 +33,13 @@ def create_collection():
     get_milvus_client()
     
     # Drop collection if it exists
-    if COLLECTION_NAME in utility.list_collections():
+if COLLECTION_NAME in utility.list_collections():
         print(f"[INFO] Dropping existing collection {COLLECTION_NAME}")
-        utility.drop_collection(COLLECTION_NAME)
-    
+    utility.drop_collection(COLLECTION_NAME)
+
     # Create schema
-    fields = [
-        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+fields = [
+    FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
         FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
         FieldSchema(name="sparse", dtype=DataType.FLOAT_VECTOR, dim=384),
         FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
@@ -88,7 +88,7 @@ def load_resume_data():
     for path in ["csv_resumes", "pdf_resumes", "docx_resumes"]:
         if os.path.exists(path):
             print(f"[DEBUG] Found directory: {path}")
-        else:
+else:
             print(f"[WARNING] Directory not found: {path}")
     
     data = processor.load_data(
