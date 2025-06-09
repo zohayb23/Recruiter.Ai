@@ -29,50 +29,41 @@ def get_milvus_client():
         return False
 
 def create_collection():
-    """Create a collection with proper schema for full-text search."""
-    get_milvus_client()
-    
-    # Drop collection if it exists
-if COLLECTION_NAME in utility.list_collections():
-        print(f"[INFO] Dropping existing collection {COLLECTION_NAME}")
-    utility.drop_collection(COLLECTION_NAME)
-
-    # Create schema
-fields = [
-    FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
-        FieldSchema(name="sparse", dtype=DataType.FLOAT_VECTOR, dim=384),
-        FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
-        FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=32)
-    ]
-    schema = CollectionSchema(fields=fields)
-    
-    # Create collection
+    """Create the collection with proper schema."""
     try:
-        collection = Collection(
-            name=COLLECTION_NAME,
-            schema=schema,
-            using='default'
-        )
+        # Drop existing collection if it exists
+        if utility.has_collection(COLLECTION_NAME):
+            print(f"[INFO] Dropping existing collection {COLLECTION_NAME}")
+            utility.drop_collection(COLLECTION_NAME)
+        
+        # Define collection schema
+        fields = [
+            FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+            FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
+            FieldSchema(name="sparse", dtype=DataType.FLOAT_VECTOR, dim=384),
+            FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
+            FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=32)
+        ]
+        schema = CollectionSchema(fields=fields, description="Resume collection for full-text search")
+        
+        # Create collection
+        collection = Collection(name=COLLECTION_NAME, schema=schema)
         print(f"[INFO] Created collection {COLLECTION_NAME}")
         
-        # Create index after collection creation
+        # Create index
         index_params = {
-            "index_type": "IVF_FLAT",
             "metric_type": "L2",
-            "params": {
-                "nlist": 1024
-            }
+            "index_type": "IVF_FLAT",
+            "params": {"nlist": 1024}
         }
         collection.create_index("sparse", index_params)
         print("[INFO] Created index for sparse field")
         
-        # Verify collection was created with correct schema
-        collection_info = collection.describe()
+        # Print schema for verification
         print("\nCollection Schema:")
-        for field in collection_info['fields']:
-            print(field)  # Print the whole field dict for debugging
-        
+        for field in collection.schema.fields:
+            print(field)
+            
         return True
     except Exception as e:
         print(f"[ERROR] Failed to create collection: {e}")
@@ -88,7 +79,7 @@ def load_resume_data():
     for path in ["csv_resumes", "pdf_resumes", "docx_resumes"]:
         if os.path.exists(path):
             print(f"[DEBUG] Found directory: {path}")
-else:
+        else:
             print(f"[WARNING] Directory not found: {path}")
     
     data = processor.load_data(
@@ -226,6 +217,48 @@ def ensure_collection_ready():
         print(f"[ERROR] Failed to load collection: {e}")
         return False
 
+def get_relevant_snippet(text: str, query: str, context_words: int = 50) -> str:
+    """Extract the most relevant snippet from the text containing the query terms."""
+    # Clean and normalize the text
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    # Split query into terms
+    query_terms = [term.lower() for term in query.split()]
+    
+    # Find the best matching position
+    best_position = 0
+    best_score = 0
+    
+    # Split text into words
+    words = text.split()
+    
+    for i in range(len(words)):
+        score = 0
+        # Check how many query terms appear near this position
+        for term in query_terms:
+            # Look for the term in a window around the current position
+            window_start = max(0, i - context_words)
+            window_end = min(len(words), i + context_words)
+            window = ' '.join(words[window_start:window_end]).lower()
+            if term in window:
+                score += 1
+        if score > best_score:
+            best_score = score
+            best_position = i
+    
+    # Extract the snippet
+    start = max(0, best_position - context_words)
+    end = min(len(words), best_position + context_words)
+    snippet = ' '.join(words[start:end])
+    
+    # Add ellipsis if needed
+    if start > 0:
+        snippet = '...' + snippet
+    if end < len(words):
+        snippet = snippet + '...'
+    
+    return snippet
+
 def search_resumes(query, top_k=10, source=None):
     """Search resumes using full-text search."""
     # Handle empty or whitespace-only queries
@@ -265,15 +298,17 @@ def search_resumes(query, top_k=10, source=None):
         
         # Format and filter results
         formatted_results = []
-        seen_filenames = set()  # Track unique filenames
+        seen_filenames = set()  # Track unique filenames for non-CSV files
         
         # In pymilvus 2.3.3, results is a list of hits
         for hit in results[0]:  # Get first query's results
             try:
                 # Access entity fields directly
                 filename = hit.entity.filename
-                # Skip if we've already seen this filename
-                if filename in seen_filenames:
+                source = hit.entity.source.lower()
+                
+                # Only deduplicate non-CSV files
+                if source != 'csv' and filename in seen_filenames:
                     continue
                     
                 text = hit.entity.text
@@ -290,7 +325,8 @@ def search_resumes(query, top_k=10, source=None):
                 # Filter by source if specified
                 if source is None or result['source'].lower() == source.lower():
                     formatted_results.append(result)
-                    seen_filenames.add(filename)
+                    if source != 'csv':  # Only track seen filenames for non-CSV files
+                        seen_filenames.add(filename)
                     if len(formatted_results) >= top_k:
                         break
             except Exception as e:
@@ -302,42 +338,6 @@ def search_resumes(query, top_k=10, source=None):
     except Exception as e:
         print(f"[ERROR] Search failed: {e}")
         return []
-
-def get_relevant_snippet(text, query, window=200):
-    """Get the most relevant snippet of text containing the search terms."""
-    # Split query into terms
-    terms = query.lower().split()
-    
-    # Find the best position that contains the most search terms
-    best_pos = 0
-    max_terms = 0
-    
-    # Look for each term in the text
-    for term in terms:
-        pos = text.lower().find(term)
-        if pos != -1:
-            # Count how many other terms are within window size
-            term_count = sum(1 for t in terms if t in text[max(0, pos-window):min(len(text), pos+window)].lower())
-            if term_count > max_terms:
-                max_terms = term_count
-                best_pos = pos
-    
-    # If no terms found, return start of text
-    if max_terms == 0:
-        return text[:window*2].replace('\n', ' ')
-    
-    # Get snippet around best position
-    start = max(0, best_pos - window)
-    end = min(len(text), best_pos + window)
-    snippet = text[start:end].replace('\n', ' ')
-    
-    # Add ellipsis if we're not at the start/end
-    if start > 0:
-        snippet = '...' + snippet
-    if end < len(text):
-        snippet = snippet + '...'
-        
-    return snippet
 
 def main():
     # Always drop, recreate, and insert data for debugging
@@ -389,17 +389,17 @@ def main():
         return highlight(snippet, term)
 
     print(f"\n{'='*25} SEARCH RESULTS FOR: '{query}' {'='*25}\n")
+
+    # Print results by source
     for source in ["csv", "docx", "pdf", "other"]:
-        header = f"{source.upper()} RESULTS"
-        print(f"{'='*20} {header} {'='*20}\n")
+        print(f"\n{'='*20} {source.upper()} RESULTS {'='*20}\n")
         if not grouped[source]:
-            print("No results found for this source.\n")
+            print("No results found for this source.")
             continue
-        for i, r in enumerate(grouped[source], 1):
-            snippet = get_snippet(r['content'], query)
-            print(f"[{i}] Filename: {r['filename']} | Score: {r['score']:.2f}")
-            print(f"Snippet: {snippet}...\n")
-            print("-" * 60 + "\n")
+        for i, result in enumerate(grouped[source], 1):
+            print(f"[{i}] Filename: {result['filename']} | Score: {result['score']:.2f}")
+            print(f"Snippet: {result['content']}")
+            print("-" * 60)
 
 if __name__ == "__main__":
     main()
