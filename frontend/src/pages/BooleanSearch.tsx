@@ -20,6 +20,7 @@ import {
   Tooltip,
   Switch,
   FormControlLabel,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -28,8 +29,8 @@ import {
   ArrowBack as ArrowBackIcon,
   Code as ParenthesesIcon,
 } from '@mui/icons-material';
-import { useAppDispatch } from '../store/hooks';
-import { saveTemplate, setSuggestions } from '../store/searchSlice';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { saveTemplate, fetchSkillSuggestions, fetchDidYouMean } from '../store/searchSlice';
 import { QueryGroup, QueryTemplate, QueryTerm, Operator } from '../types';
 
 const SAMPLE_SKILLS = [
@@ -56,12 +57,17 @@ const BooleanSearch: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { synonyms, relatedSkills, didYouMean, loading } = useAppSelector(
+    (state) => state.search
+  );
   const [queryGroups, setQueryGroups] = useState<QueryGroup[]>([
     { operator: 'AND', terms: [], parentheses: false },
   ]);
   const [suggestions, setSuggestionsLocal] = useState<string[]>([]);
   const [templateName, setTemplateName] = useState('');
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [currentInput, setCurrentInput] = useState('');
 
   useEffect(() => {
     const state = location.state as { template?: QueryTemplate };
@@ -128,12 +134,25 @@ const BooleanSearch: React.FC = () => {
     }, 2000);
   };
 
-  const handleSkillSearch = (searchTerm: string) => {
-    const filteredSkills = SAMPLE_SKILLS.filter(skill =>
-      skill.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setSuggestionsLocal(filteredSkills);
-    dispatch(setSuggestions(filteredSkills));
+  const handleSkillSearch = async (value: string) => {
+    setCurrentInput(value);
+    if (value.length >= 2) {
+      dispatch(fetchSkillSuggestions(value));
+      dispatch(fetchDidYouMean(value));
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = (groupIndex: number, suggestion: string) => {
+    const newGroups = [...queryGroups];
+    newGroups[groupIndex].terms.push({
+      value: suggestion,
+      operator: 'AND'
+    });
+    setQueryGroups(newGroups);
+    setShowSuggestions(false);
   };
 
   return (
@@ -250,45 +269,120 @@ const BooleanSearch: React.FC = () => {
                   </Stack>
                 </Grid>
                 <Grid item xs>
-                  <Autocomplete
-                    multiple
-                    options={suggestions}
-                    value={group.terms.map(term => term.value)}
-                    onChange={(_, newValue) => handleTermsChange(groupIndex, newValue)}
-                    onInputChange={(_, value) => handleSkillSearch(value)}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Add skills or keywords"
-                        placeholder="Type to search..."
-                        variant="outlined"
-                      />
+                  <Box position="relative">
+                    <Autocomplete
+                      multiple
+                      options={[]}
+                      value={group.terms.map(term => term.value)}
+                      onChange={(_, newValue) => handleTermsChange(groupIndex, newValue)}
+                      onInputChange={(_, value) => handleSkillSearch(value)}
+                      filterOptions={(x) => x}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Add skills or keywords"
+                          placeholder="Type to search..."
+                          variant="outlined"
+                        />
+                      )}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, termIndex) => {
+                          const tagProps = getTagProps({ index: termIndex });
+                          const term = group.terms[termIndex];
+                          return (
+                            <Chip
+                              {...tagProps}
+                              label={`${term.operator === 'NOT' ? 'NOT ' : ''}${option}`}
+                              color={term.operator === 'NOT' ? 'error' : group.operator === 'AND' ? 'primary' : 'secondary'}
+                              onClick={() => handleTermOperatorChange(groupIndex, termIndex)}
+                            />
+                          );
+                        })
+                      }
+                    />
+                    
+                    {showSuggestions && currentInput.length >= 2 && (
+                      <Paper
+                        sx={{
+                          position: 'absolute',
+                          width: '100%',
+                          mt: 1,
+                          zIndex: 1000,
+                          maxHeight: 400,
+                          overflow: 'auto',
+                        }}
+                      >
+                        {loading ? (
+                          <Box p={2} display="flex" justifyContent="center">
+                            <CircularProgress size={20} />
+                          </Box>
+                        ) : (
+                          <>
+                            {didYouMean.length > 0 && (
+                              <Box p={1}>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                  Did you mean:
+                                </Typography>
+                                <Stack direction="row" spacing={1} flexWrap="wrap">
+                                  {didYouMean.map((suggestion) => (
+                                    <Chip
+                                      key={suggestion}
+                                      label={suggestion}
+                                      size="small"
+                                      onClick={() => handleSuggestionClick(groupIndex, suggestion)}
+                                      sx={{ m: 0.5 }}
+                                    />
+                                  ))}
+                                </Stack>
+                              </Box>
+                            )}
+                            
+                            {synonyms.length > 0 && (
+                              <Box p={1}>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                  Synonyms:
+                                </Typography>
+                                <Stack direction="row" spacing={1} flexWrap="wrap">
+                                  {synonyms.map((synonym) => (
+                                    <Chip
+                                      key={synonym}
+                                      label={synonym}
+                                      size="small"
+                                      color="primary"
+                                      variant="outlined"
+                                      onClick={() => handleSuggestionClick(groupIndex, synonym)}
+                                      sx={{ m: 0.5 }}
+                                    />
+                                  ))}
+                                </Stack>
+                              </Box>
+                            )}
+                            
+                            {relatedSkills.length > 0 && (
+                              <Box p={1}>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                  Related Skills:
+                                </Typography>
+                                <Stack direction="row" spacing={1} flexWrap="wrap">
+                                  {relatedSkills.map((skill) => (
+                                    <Chip
+                                      key={skill}
+                                      label={skill}
+                                      size="small"
+                                      color="secondary"
+                                      variant="outlined"
+                                      onClick={() => handleSuggestionClick(groupIndex, skill)}
+                                      sx={{ m: 0.5 }}
+                                    />
+                                  ))}
+                                </Stack>
+                              </Box>
+                            )}
+                          </>
+                        )}
+                      </Paper>
                     )}
-                    renderTags={(value, getTagProps) =>
-                      value.map((option, termIndex) => {
-                        const tagProps = getTagProps({ index: termIndex });
-                        const term = group.terms[termIndex];
-                        return (
-                          <Chip
-                            {...tagProps}
-                            label={`${term.operator === 'NOT' ? 'NOT ' : ''}${option}`}
-                            color={term.operator === 'NOT' ? 'error' : group.operator === 'AND' ? 'primary' : 'secondary'}
-                            onClick={() => handleTermOperatorChange(groupIndex, termIndex)}
-                            sx={{ 
-                              borderRadius: '16px',
-                              '& .MuiChip-deleteIcon': {
-                                color: 'inherit',
-                                opacity: 0.7,
-                                '&:hover': {
-                                  opacity: 1,
-                                },
-                              },
-                            }}
-                          />
-                        );
-                      })
-                    }
-                  />
+                  </Box>
                 </Grid>
                 <Grid item>
                   <IconButton

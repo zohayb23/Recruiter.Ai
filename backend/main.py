@@ -6,7 +6,7 @@ from datetime import datetime
 import uvicorn
 
 from services.search import SearchService
-from services.skill_embeddings import SkillEmbeddingsService
+from services.skill_embeddings import SkillEmbeddingsService, SkillSuggestionService
 
 app = FastAPI(title="Recruiter.AI API")
 
@@ -22,6 +22,7 @@ app.add_middleware(
 # Initialize services
 search_service = SearchService()
 skill_service = SkillEmbeddingsService()
+skill_suggestion_service = SkillSuggestionService()
 
 # Models
 class QueryTerm(BaseModel):
@@ -46,6 +47,10 @@ class SearchResponse(BaseModel):
     page: int
     size: int
     error: Optional[str] = None
+
+class SkillQuery(BaseModel):
+    skill: str
+    threshold: Optional[float] = 0.7
 
 # Routes
 @app.get("/")
@@ -92,6 +97,30 @@ async def similar_skills(skill: str, top_k: int = 5):
     try:
         similar = skill_service.get_similar_skills(skill, top_k=top_k)
         return {"similar_skills": similar}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/skills/suggestions")
+async def get_skill_suggestions(query: SkillQuery):
+    """Get skill suggestions including synonyms and related skills"""
+    try:
+        suggestions = skill_suggestion_service.get_skill_suggestions(
+            query.skill,
+            query.threshold
+        )
+        return suggestions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/skills/did-you-mean")
+async def get_did_you_mean(query: SkillQuery):
+    """Get 'Did you mean...' suggestions for potentially misspelled skills"""
+    try:
+        suggestions = skill_suggestion_service.did_you_mean(
+            query.skill,
+            query.threshold
+        )
+        return {"suggestions": suggestions}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
