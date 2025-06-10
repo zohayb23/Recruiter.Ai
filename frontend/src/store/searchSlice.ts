@@ -1,50 +1,73 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { QueryTemplate, QueryGroup } from '../types';
+import { QueryGroup, QueryTemplate } from '../types';
 
-export interface SearchState {
+interface SearchState {
   templates: QueryTemplate[];
-  suggestions: string[];
-  synonyms: string[];
-  relatedSkills: string[];
-  didYouMean: string[];
-  loading: boolean;
+  suggestions: {
+    skills: Array<{
+      skill: string;
+      type: 'primary' | 'synonym';
+      related?: string[];
+      primary_skill?: string;
+    }>;
+    didYouMean: string[];
+    related: string[];
+  };
+  loading: {
+    suggestions: boolean;
+    templates: boolean;
+  };
   error: string | null;
 }
 
 const initialState: SearchState = {
   templates: [],
-  suggestions: [],
-  synonyms: [],
-  relatedSkills: [],
-  didYouMean: [],
-  loading: false,
+  suggestions: {
+    skills: [],
+    didYouMean: [],
+    related: [],
+  },
+  loading: {
+    suggestions: false,
+    templates: false,
+  },
   error: null,
 };
 
+// Async thunks
 export const fetchSkillSuggestions = createAsyncThunk(
   'search/fetchSkillSuggestions',
-  async (skill: string) => {
-    const response = await fetch('http://localhost:8000/api/skills/suggestions', {
+  async (partial: string) => {
+    const response = await fetch('/api/skills/suggest', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ partial, max_suggestions: 5 }),
+    });
+    const data = await response.json();
+    return data.suggestions;
+  }
+);
+
+export const fetchRelatedSkills = createAsyncThunk(
+  'search/fetchRelatedSkills',
+  async (skill: string) => {
+    const response = await fetch('/api/skills/related', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ skill }),
     });
     const data = await response.json();
-    return data;
+    return data.related_skills;
   }
 );
 
 export const fetchDidYouMean = createAsyncThunk(
   'search/fetchDidYouMean',
   async (skill: string) => {
-    const response = await fetch('http://localhost:8000/api/skills/did-you-mean', {
+    const response = await fetch('/api/skills/did-you-mean', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ skill }),
     });
     const data = await response.json();
@@ -52,49 +75,50 @@ export const fetchDidYouMean = createAsyncThunk(
   }
 );
 
-export const searchSlice = createSlice({
+export const saveTemplate = createAsyncThunk(
+  'search/saveTemplate',
+  async (template: QueryTemplate) => {
+    // Here you would typically save to backend
+    // For now, we'll just return the template
+    return template;
+  }
+);
+
+const searchSlice = createSlice({
   name: 'search',
   initialState,
   reducers: {
-    saveTemplate: (state, action: PayloadAction<QueryTemplate>) => {
-      const existingIndex = state.templates.findIndex(t => t.id === action.payload.id);
-      if (existingIndex >= 0) {
-        state.templates[existingIndex] = action.payload;
-      } else {
-        state.templates.push(action.payload);
-      }
-    },
-    deleteTemplate: (state, action: PayloadAction<string>) => {
-      state.templates = state.templates.filter(t => t.id !== action.payload);
-    },
     clearSuggestions: (state) => {
-      state.suggestions = [];
-      state.synonyms = [];
-      state.relatedSkills = [];
-      state.didYouMean = [];
+      state.suggestions = initialState.suggestions;
+    },
+    clearError: (state) => {
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchSkillSuggestions.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.loading.suggestions = true;
       })
       .addCase(fetchSkillSuggestions.fulfilled, (state, action) => {
-        state.loading = false;
-        state.synonyms = action.payload.synonyms;
-        state.relatedSkills = action.payload.related_skills;
+        state.loading.suggestions = false;
+        state.suggestions.skills = action.payload;
       })
       .addCase(fetchSkillSuggestions.rejected, (state, action) => {
-        state.loading = false;
+        state.loading.suggestions = false;
         state.error = action.error.message || 'Failed to fetch suggestions';
       })
+      .addCase(fetchRelatedSkills.fulfilled, (state, action) => {
+        state.suggestions.related = action.payload;
+      })
       .addCase(fetchDidYouMean.fulfilled, (state, action) => {
-        state.didYouMean = action.payload;
+        state.suggestions.didYouMean = action.payload;
+      })
+      .addCase(saveTemplate.fulfilled, (state, action) => {
+        state.templates.push(action.payload);
       });
   },
 });
 
-export const { saveTemplate, deleteTemplate, clearSuggestions } = searchSlice.actions;
-
+export const { clearSuggestions, clearError } = searchSlice.actions;
 export default searchSlice.reducer; 

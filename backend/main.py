@@ -6,7 +6,8 @@ from datetime import datetime
 import uvicorn
 
 from services.search import SearchService
-from services.skill_embeddings import SkillEmbeddingsService, SkillSuggestionService
+from services.skill_embeddings import SkillEmbeddingsService
+from services.skill_suggestions import SkillSuggestionEngine
 
 app = FastAPI(title="Recruiter.AI API")
 
@@ -22,7 +23,7 @@ app.add_middleware(
 # Initialize services
 search_service = SearchService()
 skill_service = SkillEmbeddingsService()
-skill_suggestion_service = SkillSuggestionService()
+skill_engine = SkillSuggestionEngine()
 
 # Models
 class QueryTerm(BaseModel):
@@ -50,7 +51,10 @@ class SearchResponse(BaseModel):
 
 class SkillQuery(BaseModel):
     skill: str
-    threshold: Optional[float] = 0.7
+
+class PartialSkillQuery(BaseModel):
+    partial: str
+    max_suggestions: Optional[int] = 5
 
 # Routes
 @app.get("/")
@@ -100,15 +104,24 @@ async def similar_skills(skill: str, top_k: int = 5):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/skills/suggestions")
-async def get_skill_suggestions(query: SkillQuery):
-    """Get skill suggestions including synonyms and related skills"""
+@app.post("/api/skills/suggest")
+async def get_skill_suggestions(query: PartialSkillQuery):
+    """Get skill suggestions based on partial input"""
     try:
-        suggestions = skill_suggestion_service.get_skill_suggestions(
-            query.skill,
-            query.threshold
+        suggestions = skill_engine.get_skill_suggestions(
+            query.partial,
+            max_suggestions=query.max_suggestions
         )
-        return suggestions
+        return {"suggestions": suggestions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/skills/related")
+async def get_related_skills(query: SkillQuery):
+    """Get related skills for a given skill"""
+    try:
+        related = skill_engine.get_related_skills(query.skill)
+        return {"related_skills": related}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -116,10 +129,7 @@ async def get_skill_suggestions(query: SkillQuery):
 async def get_did_you_mean(query: SkillQuery):
     """Get 'Did you mean...' suggestions for potentially misspelled skills"""
     try:
-        suggestions = skill_suggestion_service.did_you_mean(
-            query.skill,
-            query.threshold
-        )
+        suggestions = skill_engine.did_you_mean(query.skill)
         return {"suggestions": suggestions}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
