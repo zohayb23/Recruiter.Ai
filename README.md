@@ -10,6 +10,13 @@ An advanced resume search and matching system that combines full-text and semant
   - Semantic search using dense embeddings
   - Hybrid search capabilities
 
+- **Boolean Search Builder**:
+  - Visual boolean query builder
+  - Support for AND, OR, NOT operators
+  - Grouping with parentheses
+  - Template saving and management
+  - Real-time skill suggestions
+
 - **Multiple Format Support**:
 
   - PDF resumes
@@ -23,6 +30,32 @@ An advanced resume search and matching system that combines full-text and semant
   - Skill-based search
   - Education matching
   - Experience level correlation
+
+## Project Structure
+
+```
+Recruiter.AI/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── Layout.tsx         # Main layout component
+│   │   │   ├── pages/
+│   │   │   │   ├── BooleanSearch.tsx  # Boolean search builder
+│   │   │   │   └── Templates.tsx      # Search templates management
+│   │   │   ├── store/
+│   │   │   │   └── searchSlice.ts     # Redux state management
+│   │   │   ├── types/
+│   │   │   │   └── index.ts           # TypeScript type definitions
+│   │   │   ├── App.tsx                # Main application component
+│   │   │   └── index.tsx              # Application entry point
+│   │   └── package.json               # Frontend dependencies
+│   └── backend/
+│       ├── services/
+│       │   ├── search.py              # Search service implementation
+│       │   └── skill_embeddings.py    # Skill embedding generation
+│       └── main.py                    # Backend entry point
+└── README.md                      # Project documentation
+```
 
 ## Technical Stack
 
@@ -154,3 +187,22 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Milvus for vector database capabilities
 - Sentence Transformers for semantic search
 - All contributors and users of the project
+
+## Boolean Search Features
+
+The boolean search builder provides a user-friendly interface for creating complex search queries:
+
+- **Visual Query Building**:
+  - Drag-and-drop interface for query construction
+  - Real-time preview of search results
+  - Support for nested boolean operations
+
+- **Template Management**:
+  - Save frequently used search patterns
+  - Load and modify existing templates
+  - Share templates across team members
+
+- **Skill Suggestions**:
+  - Auto-complete for skill input
+  - Standardized skill terminology
+  - Skill relevance indicators
