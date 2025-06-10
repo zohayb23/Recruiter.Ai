@@ -6,6 +6,9 @@ import { store } from './store/store';
 import Layout from './components/Layout';
 import BooleanSearch from './pages/BooleanSearch';
 import Templates from './pages/Templates';
+import FullTextSearch from './pages/FullTextSearch';
+import DenseSearch from './pages/DenseSearch';
+import SkillsRating from './pages/SkillsRating';
 
 const theme = createTheme({
   palette: {
@@ -31,6 +34,9 @@ function App() {
             <Routes>
               <Route path="/" element={<BooleanSearch />} />
               <Route path="/templates" element={<Templates />} />
+              <Route path="/fulltext" element={<FullTextSearch />} />
+              <Route path="/semantic" element={<DenseSearch />} />
+              <Route path="/skills" element={<SkillsRating />} />
             </Routes>
           </Layout>
         </Router>

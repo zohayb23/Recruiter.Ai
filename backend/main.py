@@ -7,14 +7,14 @@ import uvicorn
 
 from services.search import SearchService
 from services.skill_embeddings import SkillEmbeddingsService
-from services.skill_suggestions import SkillSuggestionEngine
+from services.skill_ratings import SkillRatingSystem
 
 app = FastAPI(title="Recruiter.AI API")
 
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"],  # Frontend URL
+    allow_origins=["http://localhost:3000"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -23,7 +23,7 @@ app.add_middleware(
 # Initialize services
 search_service = SearchService()
 skill_service = SkillEmbeddingsService()
-skill_engine = SkillSuggestionEngine()
+skill_rating_service = SkillRatingSystem()
 
 # Models
 class QueryTerm(BaseModel):
@@ -31,9 +31,23 @@ class QueryTerm(BaseModel):
     operator: str  # AND, OR, NOT
 
 class QueryGroup(BaseModel):
-    terms: List[QueryTerm]
     operator: str  # AND, OR
-    parentheses: Optional[bool] = False
+    terms: List[QueryTerm]
+    parentheses: bool
+
+class SearchRequest(BaseModel):
+    query_groups: List[QueryGroup]
+    page: Optional[int] = 1
+    size: Optional[int] = 20
+
+class DenseSearchRequest(BaseModel):
+    query: str
+    threshold: Optional[float] = 0.7
+    top_k: Optional[int] = 10
+
+class SkillRatingRequest(BaseModel):
+    job_description: Optional[str] = None
+    required_skills: Optional[List[str]] = None
 
 class SearchTemplate(BaseModel):
     id: Optional[str] = None
@@ -49,26 +63,83 @@ class SearchResponse(BaseModel):
     size: int
     error: Optional[str] = None
 
-class SkillQuery(BaseModel):
-    skill: str
-
-class PartialSkillQuery(BaseModel):
-    partial: str
-    max_suggestions: Optional[int] = 5
-
 # Routes
 @app.get("/")
 async def root():
     return {"message": "Welcome to Recruiter.AI API"}
 
-@app.post("/api/search", response_model=SearchResponse)
-async def search(query: List[QueryGroup], page: int = 1, size: int = 20):
+# Boolean Search Endpoints
+@app.post("/api/search/boolean")
+async def boolean_search(request: SearchRequest):
     try:
-        return await search_service.search_candidates(
-            [group.dict() for group in query],
-            page=page,
-            size=size
+        results = await search_service.search_candidates(
+            request.query_groups,
+            request.page,
+            request.size
         )
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Full Text Search Endpoint
+@app.get("/api/search/fulltext")
+async def fulltext_search(query: str, source: Optional[str] = None, top_k: Optional[int] = 10):
+    try:
+        from services.full_text_search import search_resumes
+        results = search_resumes(query, top_k=top_k, source=source)
+        return {"results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Dense/Semantic Search Endpoint
+@app.post("/api/search/dense")
+async def dense_search(request: DenseSearchRequest):
+    try:
+        from services.dense_search import dense_search
+        results = dense_search(
+            request.query,
+            threshold=request.threshold,
+            top_k=request.top_k
+        )
+        return {"results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Skills Rating Endpoint
+@app.post("/api/search/skills")
+async def rate_skills(request: SkillRatingRequest):
+    try:
+        results = skill_rating_service.rate_resumes(
+            job_description=request.job_description,
+            required_skills=request.required_skills
+        )
+        return {"results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Skills Suggestion Endpoints
+@app.get("/api/skills/suggest/{skill}")
+async def suggest_skills(skill: str):
+    try:
+        suggestions = skill_service.get_skill_suggestions(skill)
+        return {"suggestions": suggestions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/skills/similar/{skill}")
+async def similar_skills(skill: str, top_k: int = 5):
+    try:
+        similar = skill_service.get_similar_skills(skill, top_k=top_k)
+        return {"similar_skills": similar}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# For development/testing
+@app.post("/api/index/candidate")
+async def index_candidate(candidate: Dict[str, Any]):
+    try:
+        result = await search_service.index_candidate(candidate)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -88,60 +159,5 @@ async def get_templates():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/skills/suggest/{skill}")
-async def suggest_skills(skill: str):
-    try:
-        suggestions = skill_service.get_skill_suggestions(skill)
-        return {"suggestions": suggestions}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/skills/similar/{skill}")
-async def similar_skills(skill: str, top_k: int = 5):
-    try:
-        similar = skill_service.get_similar_skills(skill, top_k=top_k)
-        return {"similar_skills": similar}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/skills/suggest")
-async def get_skill_suggestions(query: PartialSkillQuery):
-    """Get skill suggestions based on partial input"""
-    try:
-        suggestions = skill_engine.get_skill_suggestions(
-            query.partial,
-            max_suggestions=query.max_suggestions
-        )
-        return {"suggestions": suggestions}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/skills/related")
-async def get_related_skills(query: SkillQuery):
-    """Get related skills for a given skill"""
-    try:
-        related = skill_engine.get_related_skills(query.skill)
-        return {"related_skills": related}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/skills/did-you-mean")
-async def get_did_you_mean(query: SkillQuery):
-    """Get 'Did you mean...' suggestions for potentially misspelled skills"""
-    try:
-        suggestions = skill_engine.did_you_mean(query.skill)
-        return {"suggestions": suggestions}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# For development/testing
-@app.post("/api/index/candidate")
-async def index_candidate(candidate: Dict[str, Any]):
-    try:
-        result = await search_service.index_candidate(candidate)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run(app, host="0.0.0.0", port=8000) 

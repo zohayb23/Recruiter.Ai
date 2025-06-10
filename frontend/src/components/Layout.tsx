@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, To } from 'react-router-dom';
 import {
   AppBar,
   Box,
@@ -11,15 +11,26 @@ import {
   ListItemText,
   Toolbar,
   Typography,
+  Divider,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Search as SearchIcon,
   SaveAlt as SaveIcon,
+  TextFields as FullTextIcon,
+  Psychology as SemanticIcon,
+  Assessment as SkillsIcon,
 } from '@mui/icons-material';
 
 interface LayoutProps {
   children: React.ReactNode;
+}
+
+interface MenuItem {
+  text?: string;
+  icon?: React.ReactNode;
+  path?: To;
+  divider?: boolean;
 }
 
 const drawerWidth = 240;
@@ -32,8 +43,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setMobileOpen(!mobileOpen);
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { text: 'Boolean Search', icon: <SearchIcon />, path: '/' },
+    { text: 'Full Text Search', icon: <FullTextIcon />, path: '/fulltext' },
+    { text: 'Semantic Search', icon: <SemanticIcon />, path: '/semantic' },
+    { text: 'Skills Rating', icon: <SkillsIcon />, path: '/skills' },
+    { divider: true },
     { text: 'Templates', icon: <SaveIcon />, path: '/templates' },
   ];
 
@@ -41,18 +56,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div>
       <Toolbar />
       <List>
-        {menuItems.map((item) => (
-          <ListItem
-            button
-            key={item.text}
-            onClick={() => {
-              navigate(item.path);
-              setMobileOpen(false);
-            }}
-          >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
+        {menuItems.map((item, index) => (
+          item.divider ? (
+            <Divider key={`divider-${index}`} sx={{ my: 1 }} />
+          ) : (
+            <ListItem
+              button
+              key={item.text}
+              onClick={() => {
+                if (item.path) navigate(item.path);
+                setMobileOpen(false);
+              }}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItem>
+          )
         ))}
       </List>
     </div>
