@@ -66,33 +66,73 @@ Recruiter.AI/
 - PDFPlumber
 - Python-docx
 
-## Installation
+## Quick Start Guide
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- Python 3.8+
+- Docker and Docker Compose
+- Git
+
+### Installation Steps
 
 1. Clone the repository:
-
 ```bash
-git clone https://github.com/yourusername/Recrutier.AI.git
-cd Recrutier.AI
+git clone https://github.com/zohayb23/Recruiter.Ai.git
+cd Recruiter.AI
 ```
 
-2. Create and activate virtual environment:
-
+2. Set up the Backend:
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 
-3. Install dependencies:
-
-```bash
+# Install backend dependencies
+cd backend
 pip install -r requirements.txt
 ```
 
-4. Start Milvus:
+3. Set up the Frontend:
+```bash
+# Install frontend dependencies
+cd frontend
+npm install
+```
+
+4. Start the Services:
+```bash
+# Start the database and other services
+docker-compose up -d
+
+# Start the backend server (in backend directory)
+cd backend
+uvicorn main:app --reload
+
+# Start the frontend development server (in frontend directory)
+cd frontend
+npm start
+```
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
+
+### Docker Deployment
+
+To run the entire application using Docker:
 
 ```bash
-docker-compose -f docker-compose-milvus.yml up -d
+# Build and start all services
+docker-compose up --build -d
 ```
+
+This will start:
+- Frontend container
+- Backend container
+- Database and other required services
 
 ## Usage
 
