@@ -84,6 +84,15 @@ export const saveTemplate = createAsyncThunk(
   }
 );
 
+export const deleteTemplate = createAsyncThunk(
+  'search/deleteTemplate',
+  async (templateId: string) => {
+    // Here you would typically delete from backend
+    // For now, we'll just return the ID
+    return templateId;
+  }
+);
+
 const searchSlice = createSlice({
   name: 'search',
   initialState,
@@ -115,7 +124,15 @@ const searchSlice = createSlice({
         state.suggestions.didYouMean = action.payload;
       })
       .addCase(saveTemplate.fulfilled, (state, action) => {
-        state.templates.push(action.payload);
+        const existingIndex = state.templates.findIndex(t => t.id === action.payload.id);
+        if (existingIndex >= 0) {
+          state.templates[existingIndex] = action.payload;
+        } else {
+          state.templates.push(action.payload);
+        }
+      })
+      .addCase(deleteTemplate.fulfilled, (state, action) => {
+        state.templates = state.templates.filter(t => t.id !== action.payload);
       });
   },
 });
