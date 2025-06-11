@@ -33,6 +33,8 @@ class ResumeEmbeddingProcessor:
             FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=384),
             FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
             FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=16),
+            FieldSchema(name="name", dtype=DataType.VARCHAR, max_length=128),
+            FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
         ]
         schema = CollectionSchema(fields, description="Resume Embeddings")
         Collection(self.collection_name, schema)
@@ -43,6 +45,8 @@ class ResumeEmbeddingProcessor:
             embeddings.tolist(),
             [m.get('filename', '') for m in metadata],
             [m.get('source', '') for m in metadata],
+            [m.get('name', '') for m in metadata],
+            [m.get('text', '') for m in metadata],
         ]
         print(f"[DEBUG] Inserting {len(embeddings)} embeddings into Milvus...")
         result = col.insert(data)
@@ -76,24 +80,34 @@ class ResumeEmbeddingProcessor:
                         df = pd.read_csv(file_path)
                         if 'Resume' in df.columns:
                             for idx, row in df.iterrows():
-                                data.append({'source': 'csv', 'filename': filename, 'text': row['Resume']})
+                                data.append({
+                                    'source': 'csv',
+                                    'filename': f"{filename}_{idx+1}",  # Add resume number to filename
+                                    'text': row['Resume'],
+                                    'name': row['Name'] if 'Name' in row and not pd.isna(row['Name']) else f"Resume #{idx+1}"
+                                })
             elif os.path.isfile(csv_path):
                 df = pd.read_csv(csv_path)
                 if 'Resume' in df.columns:
                     for idx, row in df.iterrows():
-                        data.append({'source': 'csv', 'filename': f"{os.path.basename(csv_path)}_{idx}", 'text': row['Resume']})
+                        data.append({
+                            'source': 'csv',
+                            'filename': f"{os.path.basename(csv_path)}_{idx+1}",  # Add resume number to filename
+                            'text': row['Resume'],
+                            'name': row['Name'] if 'Name' in row and not pd.isna(row['Name']) else f"Resume #{idx+1}"
+                        })
         if pdf_dir:
             for filename in os.listdir(pdf_dir):
                 if filename.lower().endswith('.pdf'):
                     pdf_path = os.path.join(pdf_dir, filename)
                     text = self.extract_text_from_pdf(pdf_path)
-                    data.append({'source': 'pdf', 'filename': filename, 'text': text})
+                    data.append({'source': 'pdf', 'filename': filename, 'text': text, 'name': ''})
         if docx_dir:
             for filename in os.listdir(docx_dir):
                 if filename.lower().endswith('.docx'):
                     docx_path = os.path.join(docx_dir, filename)
                     text = self.extract_text_from_docx(docx_path)
-                    data.append({'source': 'docx', 'filename': filename, 'text': text})
+                    data.append({'source': 'docx', 'filename': filename, 'text': text, 'name': ''})
         self.data = data
         print(f"[DEBUG] Loaded {len(data)} resumes.")
         return data

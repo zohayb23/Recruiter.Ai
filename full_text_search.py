@@ -34,16 +34,16 @@ def create_collection():
         # Drop existing collection if it exists
         if utility.has_collection(COLLECTION_NAME):
             print(f"[INFO] Dropping existing collection {COLLECTION_NAME}")
-            utility.drop_collection(COLLECTION_NAME)
-        
+    utility.drop_collection(COLLECTION_NAME)
+
         # Define collection schema
-        fields = [
-            FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+fields = [
+    FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
             FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
             FieldSchema(name="sparse", dtype=DataType.FLOAT_VECTOR, dim=384),
             FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
             FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=32)
-        ]
+]
         schema = CollectionSchema(fields=fields, description="Resume collection for full-text search")
         
         # Create collection
@@ -58,7 +58,7 @@ def create_collection():
         }
         collection.create_index("sparse", index_params)
         print("[INFO] Created index for sparse field")
-        
+
         # Print schema for verification
         print("\nCollection Schema:")
         for field in collection.schema.fields:
@@ -167,7 +167,7 @@ def insert_resume_data():
     num_entities = collection.num_entities
     print(f"[INFO] Successfully inserted {total_inserted} documents")
     
-    if num_entities == 0:
+if num_entities == 0:
         print("[ERROR] Insertion appeared to succeed but collection is empty")
         return False
         
@@ -384,7 +384,7 @@ def main():
             start = max(match.start() - window, 0)
             end = min(match.end() + window, len(text))
             snippet = text[start:end].replace('\n', ' ')
-        else:
+else:
             snippet = text[:2*window].replace('\n', ' ')
         return highlight(snippet, term)
 

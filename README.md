@@ -81,7 +81,8 @@ python src/embedding_processor.py --csv csv_resumes --pdf_dir pdf_resumes --docx
 
 #### Full Text Search
 
-```python
+```
+python
 from full_text_search import search_resumes
 
 results = search_resumes("Java Developer", top_k=5)
