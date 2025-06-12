@@ -1,163 +1,363 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+import os
+import docx
+import pdfplumber
+import aiofiles
 from datetime import datetime
 import uvicorn
+from fastapi.responses import JSONResponse, FileResponse
+import logging
+import sys
+import io
+from docx2pdf import convert
+import tempfile
+from pathlib import Path
+import nltk
 
-from services.search import SearchService
-from services.skill_embeddings import SkillEmbeddingsService
-from services.skill_ratings import SkillRatingSystem
+from services.full_text_search import search_resumes
+from services.dense_search import semantic_search
+from services.skill_ratings import rate_skills
+from services.boolean_search import boolean_search
+from services.search_utils import process_search_result
+from services.text_summarizer import summarizer
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Download required NLTK data
+try:
+    nltk.download('punkt')
+    nltk.download('stopwords')
+    nltk.download('wordnet')
+    nltk.download('averaged_perceptron_tagger')
+except Exception as e:
+    logging.error(f"Error downloading NLTK data: {str(e)}")
 
 app = FastAPI(title="Recruiter.AI API")
 
 # Enable CORS
+origins = [
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+    "*"  # Allow all origins for development
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize services
-search_service = SearchService()
-skill_service = SkillEmbeddingsService()
-skill_rating_service = SkillRatingSystem()
+# Add error handling middleware
+@app.middleware("http")
+async def add_error_handling(request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        logger.error(f"Error handling request: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": str(e)},
+        )
+
+# Ensure directories exist
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("../csv_resumes", exist_ok=True)
+os.makedirs("../docx_resumes", exist_ok=True)
+os.makedirs("../pdf_resumes", exist_ok=True)
 
 # Models
-class QueryTerm(BaseModel):
-    value: str
-    operator: str  # AND, OR, NOT
-
-class QueryGroup(BaseModel):
-    operator: str  # AND, OR
-    terms: List[QueryTerm]
-    parentheses: bool
-
 class SearchRequest(BaseModel):
-    query_groups: List[QueryGroup]
-    page: Optional[int] = 1
-    size: Optional[int] = 20
-
-class DenseSearchRequest(BaseModel):
     query: str
-    threshold: Optional[float] = 0.7
-    top_k: Optional[int] = 10
+    use_boolean: bool = False
+    terms: Optional[List[str]] = None
+    top_k: Optional[int] = Field(default=10, ge=1)
+
+class CombinedSearchRequest(BaseModel):
+    query: str
+    searchTypes: Dict[str, bool] = Field(default_factory=lambda: {
+        "fulltext": True,
+        "semantic": False,
+        "skills": False
+    })
+    weights: Dict[str, float] = Field(default_factory=lambda: {
+        "fulltext": 1.0,
+        "semantic": 0.0,
+        "skills": 0.0
+    })
+    page: int = Field(default=1, ge=1)
+    pageSize: int = Field(default=10, ge=1, le=100)
+    top_k: Optional[int] = Field(default=None)
 
 class SkillRatingRequest(BaseModel):
-    job_description: Optional[str] = None
-    required_skills: Optional[List[str]] = None
+    required_skills: List[str]
 
-class SearchTemplate(BaseModel):
-    id: Optional[str] = None
-    name: str
-    groups: List[QueryGroup]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+def process_search_result(result: dict, query_skills: List[str] = None) -> dict:
+    """Process and enhance search results with summaries and scores."""
+    if not isinstance(result, dict):
+        return {}
 
-class SearchResponse(BaseModel):
-    total: int
-    results: List[Dict[str, Any]]
-    page: int
-    size: int
-    error: Optional[str] = None
+    # Generate summary using our summarizer
+    content = result.get("content", "")
+    query = " ".join(query_skills) if query_skills else ""
+    summary = summarizer.generate_summary(content, query)
 
-# Routes
-@app.get("/")
-async def root():
-    return {"message": "Welcome to Recruiter.AI API"}
+    # Calculate normalized score
+    score = float(result.get("score", 0))
+    if score > 1:  # Normalize if score is > 1
+        score = min(score / 10, 1.0)
 
-# Boolean Search Endpoints
-@app.post("/api/search/boolean")
-async def boolean_search(request: SearchRequest):
-    try:
-        results = await search_service.search_candidates(
-            request.query_groups,
-            request.page,
-            request.size
-        )
-        return results
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "filename": result.get("filename", ""),
+        "name": result.get("name", ""),
+        "summary": summary,
+        "content": content,
+        "experience": result.get("experience", ""),
+        "skills": result.get("skills", []),
+        "location": result.get("location", ""),
+        "email": result.get("email", ""),
+        "phone": result.get("phone", ""),
+        "score": score,
+        "match_details": result.get("match_details", {})
+    }
 
 # Full Text Search Endpoint
-@app.get("/api/search/fulltext")
-async def fulltext_search(query: str, source: Optional[str] = None, top_k: Optional[int] = 10):
+@app.post("/api/search/fulltext")
+async def fulltext_search(request: SearchRequest):
     try:
-        from services.full_text_search import search_resumes
-        results = search_resumes(query, top_k=top_k, source=source)
+        logger.info(f"Fulltext search request received for query: {request.query}")
+        results = search_resumes(query=request.query, top_k=request.top_k)
         return {"results": results}
     except Exception as e:
+        logger.error(f"Error in fulltext search: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Dense/Semantic Search Endpoint
-@app.post("/api/search/dense")
-async def dense_search(request: DenseSearchRequest):
+# Semantic Search Endpoint
+@app.post("/api/search/semantic")
+async def semantic_search_endpoint(request: SearchRequest):
     try:
-        from services.dense_search import dense_search
-        results = dense_search(
-            request.query,
-            threshold=request.threshold,
-            top_k=request.top_k
-        )
+        logger.info(f"Semantic search request received for query: {request.query}")
+        results = semantic_search(query=request.query, top_k=request.top_k)
+        processed_results = [process_search_result(r) for r in results]
+        return {"results": processed_results}
+    except Exception as e:
+        logger.error(f"Error in semantic search: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Boolean Search Endpoint
+@app.post("/api/search/boolean")
+async def boolean_search_endpoint(request: SearchRequest):
+    try:
+        logger.info(f"Boolean search request received for query: {request.query}")
+        if not request.terms:
+            raise HTTPException(status_code=400, detail="Terms are required for boolean search")
+        results = boolean_search(request.terms, top_k=request.top_k)
         return {"results": results}
     except Exception as e:
+        logger.error(f"Error in boolean search: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Combined Search Endpoint
+@app.post("/api/search/combined")
+async def combined_search(request: CombinedSearchRequest):
+    try:
+        logger.info(f"Combined search request received: {request}")
+        results = []
+        final_results = {}
+        query = request.query.strip()
+        top_k = request.top_k or request.pageSize
+
+        if not query:
+            return {
+                "results": [],
+                "total": 0,
+                "page": request.page,
+                "pageSize": request.pageSize
+            }
+
+        # Extract skills from query for matching
+        query_skills = [skill.strip() for skill in query.split() if len(skill.strip()) > 2]
+
+        # Perform searches based on enabled types
+        if request.searchTypes.get("fulltext", False):
+            weight = request.weights.get("fulltext", 0)
+            if weight > 0:
+                try:
+                    fulltext_results = search_resumes(query=query, top_k=top_k)
+                    logger.info(f"Fulltext search found {len(fulltext_results)} results")
+                    for result in fulltext_results:
+                        if not isinstance(result, dict):
+                            continue
+                        result["match_score"] = float(result.get("score", 0)) * weight
+                        result = process_search_result(result, query_skills)
+                        key = result["filename"]
+                        if key not in final_results:
+                            final_results[key] = result
+                        else:
+                            final_results[key]["match_score"] += result["match_score"]
+                except Exception as e:
+                    logger.error(f"Fulltext search error: {str(e)}")
+
+        if request.searchTypes.get("semantic", False):
+            weight = request.weights.get("semantic", 0)
+            if weight > 0:
+                try:
+                    semantic_results = semantic_search(query=query, top_k=top_k)
+                    logger.info(f"Semantic search found {len(semantic_results)} results")
+                    for result in semantic_results:
+                        if not isinstance(result, dict):
+                            continue
+                        result["match_score"] = float(result.get("score", 0)) * weight
+                        result = process_search_result(result, query_skills)
+                        key = result["filename"]
+                        if key not in final_results:
+                            final_results[key] = result
+                        else:
+                            final_results[key]["match_score"] += result["match_score"]
+                except Exception as e:
+                    logger.error(f"Semantic search error: {str(e)}")
+
+        if request.searchTypes.get("skills", False):
+            weight = request.weights.get("skills", 0)
+            if weight > 0:
+                try:
+                    skills_results = rate_skills(query.split(), top_k=top_k)
+                    logger.info(f"Skills search found {len(skills_results)} results")
+                    for result in skills_results:
+                        if not isinstance(result, dict):
+                            continue
+                        result["match_score"] = float(result.get("score", 0)) * weight
+                        result = process_search_result(result, query_skills)
+                        key = result["filename"]
+                        if key not in final_results:
+                            final_results[key] = result
+                        else:
+                            final_results[key]["match_score"] += result["match_score"]
+                except Exception as e:
+                    logger.error(f"Skills search error: {str(e)}")
+
+        # Convert final_results to list and sort by score
+        results = list(final_results.values())
+        results.sort(key=lambda x: x["match_score"], reverse=True)
+
+        # Calculate total results and paginate
+        total_results = len(results)
+        start_idx = (request.page - 1) * request.pageSize
+        end_idx = start_idx + request.pageSize
+        paginated_results = results[start_idx:end_idx] if results else []
+
+        response_data = {
+            "results": paginated_results,
+            "total": total_results,
+            "page": request.page,
+            "pageSize": request.pageSize
+        }
+        
+        logger.info(f"Returning {len(paginated_results)} results (total: {total_results})")
+        return response_data
+
+    except Exception as e:
+        logger.error(f"Combined search error: {str(e)}")
+        return {
+            "results": [],
+            "total": 0,
+            "page": request.page,
+            "pageSize": request.pageSize,
+            "error": str(e)
+        }
 
 # Skills Rating Endpoint
 @app.post("/api/search/skills")
-async def rate_skills(request: SkillRatingRequest):
+async def skills_rating(request: SkillRatingRequest):
     try:
-        results = skill_rating_service.rate_resumes(
-            job_description=request.job_description,
-            required_skills=request.required_skills
+        logger.info(f"Skills rating request received for skills: {request.required_skills}")
+        results = rate_skills(request.required_skills)
+        processed_results = [process_search_result(r, request.required_skills) for r in results]
+        return {"results": processed_results}
+    except Exception as e:
+        logger.error(f"Error in skills rating: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Resume View Endpoint
+@app.get("/api/resume/view/{filename}")
+async def view_resume(filename: str):
+    try:
+        # Clean the filename and decode URL encoding
+        filename = filename.replace("%20", " ")
+        
+        # Get absolute paths to resume directories
+        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        pdf_dir = os.path.join(parent_dir, "pdf_resumes")
+        docx_dir = os.path.join(parent_dir, "docx_resumes")
+        temp_dir = os.path.join(parent_dir, "temp")
+        
+        # Ensure directories exist
+        os.makedirs(pdf_dir, exist_ok=True)
+        os.makedirs(docx_dir, exist_ok=True)
+        os.makedirs(temp_dir, exist_ok=True)
+
+        # Determine file path and type
+        if filename.lower().endswith('.pdf'):
+            file_path = os.path.join(pdf_dir, filename)
+            media_type = 'application/pdf'
+            needs_conversion = False
+        elif filename.lower().endswith('.docx'):
+            file_path = os.path.join(docx_dir, filename)
+            pdf_filename = filename.rsplit('.', 1)[0] + '.pdf'
+            output_path = os.path.join(temp_dir, pdf_filename)
+            media_type = 'application/pdf'
+            needs_conversion = True
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+
+        # Verify original file exists
+        if not os.path.exists(file_path):
+            logger.error(f"File not found: {file_path}")
+            raise HTTPException(status_code=404, detail=f"Resume not found: {filename}")
+        
+        if not (file_path.startswith(pdf_dir) or file_path.startswith(docx_dir)):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        if needs_conversion:
+            try:
+                # Convert DOCX to PDF using python-docx-pdf
+                if not os.path.exists(output_path):
+                    logger.info(f"Converting {filename} to PDF...")
+                    convert(file_path, output_path)
+                file_path = output_path
+            except Exception as e:
+                logger.error(f"Error converting file {filename}: {str(e)}")
+                # If conversion fails, try to serve the original DOCX
+                file_path = os.path.join(docx_dir, filename)
+                media_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
+        # Return file response with inline content disposition
+        return FileResponse(
+            path=file_path,
+            media_type=media_type,
+            filename=filename,
+            headers={
+                'Content-Disposition': 'inline',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Expose-Headers': 'Content-Disposition'
+            }
         )
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-# Skills Suggestion Endpoints
-@app.get("/api/skills/suggest/{skill}")
-async def suggest_skills(skill: str):
-    try:
-        suggestions = skill_service.get_skill_suggestions(skill)
-        return {"suggestions": suggestions}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/skills/similar/{skill}")
-async def similar_skills(skill: str, top_k: int = 5):
-    try:
-        similar = skill_service.get_similar_skills(skill, top_k=top_k)
-        return {"similar_skills": similar}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# For development/testing
-@app.post("/api/index/candidate")
-async def index_candidate(candidate: Dict[str, Any]):
-    try:
-        result = await search_service.index_candidate(candidate)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/templates")
-async def create_template(template: SearchTemplate):
-    try:
-        # TODO: Implement template creation in database
-        return template
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/templates")
-async def get_templates():
-    try:
-        # TODO: Implement template retrieval from database
-        return []
-    except Exception as e:
+        logger.error(f"Error serving resume file: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8001) 

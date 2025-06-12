@@ -1,115 +1,239 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Paper,
+  Container,
   Typography,
   TextField,
   Button,
-  Card,
-  CardContent,
-  Stack,
-  Chip,
-  CircularProgress,
+  Paper,
   Alert,
+  CircularProgress,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import {
+  Search as SearchIcon,
+  HelpOutline as HelpIcon,
+} from '@mui/icons-material';
+import SearchResult from '../components/SearchResult';
+import SearchTips from '../components/SearchTips';
+import ResultsPagination from '../components/ResultsPagination';
+import { SearchResultItem } from '../types/search';
 
-interface SearchResult {
-  filename: string;
-  source: string;
-  content: string;
-  score: number;
+interface RawSearchResult {
+  filename?: string;
+  name?: string;
+  content?: string;
+  summary?: string;
+  experience?: string;
+  skills?: string[];
+  location?: string;
+  email?: string;
+  phone?: string;
+  score?: number;
+  match_details?: {
+    skills_score?: number;
+    experience_score?: number;
+  };
 }
 
 const FullTextSearch: React.FC = () => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchResultItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [showTips, setShowTips] = useState(true);
+
+  const processSearchResult = (rawResult: RawSearchResult): SearchResultItem => {
+    return {
+      filename: rawResult.filename || '',
+      name: rawResult.name || rawResult.filename?.replace(/\.[^/.]+$/, '') || 'Unknown',
+      summary: rawResult.summary || rawResult.content?.substring(0, 200) || 'No summary available',
+      experience: rawResult.experience || '',
+      skills: Array.isArray(rawResult.skills) ? rawResult.skills : [],
+      location: rawResult.location || '',
+      email: rawResult.email || '',
+      phone: rawResult.phone || '',
+      scores: {
+        overall: rawResult.score ? Math.round(rawResult.score * 100) : 0,
+        skills: rawResult.match_details?.skills_score ? Math.round(rawResult.match_details.skills_score * 100) : 0,
+        experience: rawResult.match_details?.experience_score ? Math.round(rawResult.match_details.experience_score * 100) : 0,
+      }
+    };
+  };
 
   const handleSearch = async () => {
     if (!query.trim()) return;
 
     setLoading(true);
     setError(null);
+    setResults([]);
+    setPage(1);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/search/fulltext?query=${encodeURIComponent(query)}`);
-      const data = await response.json();
+      const response = await fetch('http://localhost:8001/api/search/fulltext', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: query.trim(),
+          top_k: rowsPerPage
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Failed to perform search');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Search failed');
       }
 
-      setResults(data.results);
+      const data = await response.json();
+      
+      const processedResults = (data.results || [])
+        .map((result: RawSearchResult) => processSearchResult(result))
+        .filter((result: SearchResultItem) => result.filename);
+
+      const sortedResults = processedResults.sort((a: SearchResultItem, b: SearchResultItem) => 
+        (b.scores?.overall || 0) - (a.scores?.overall || 0)
+      );
+
+      setResults(sortedResults);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Failed to perform search. Please try again.');
+      console.error('Search error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <Box sx={{ maxWidth: 1200, margin: '0 auto', p: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Full Text Search
-      </Typography>
+  const handleViewResume = async (filename: string) => {
+    try {
+      const response = await fetch(`http://localhost:8001/api/resume/${filename}`, {
+        method: 'GET',
+      });
       
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Stack direction="row" spacing={2}>
-          <TextField
-            fullWidth
-            label="Search Query"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="Enter keywords to search..."
-          />
-          <Button
-            variant="contained"
-            onClick={handleSearch}
-            disabled={loading || !query.trim()}
-            startIcon={loading ? <CircularProgress size={20} /> : <SearchIcon />}
-          >
-            Search
-          </Button>
-        </Stack>
-      </Paper>
+      if (!response.ok) {
+        throw new Error('Failed to fetch resume');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error('Error viewing resume:', err);
+      setError('Failed to open resume. Please try again.');
+    }
+  };
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+  const handleViewDetails = (result: SearchResultItem) => {
+    console.log('Viewing details for:', result.name);
+  };
 
-      <Stack spacing={2}>
-        {results.map((result, index) => (
-          <Card key={index}>
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography variant="h6" component="div">
-                  {result.filename}
-                </Typography>
-                <Stack direction="row" spacing={1}>
-                  <Chip
-                    label={result.source}
-                    color="primary"
-                    size="small"
-                  />
-                  <Chip
-                    label={`Score: ${result.score.toFixed(2)}`}
-                    color="secondary"
-                    size="small"
-                  />
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  {result.content}
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-        ))}
-      </Stack>
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const paginatedResults = results.slice(
+    (page - 1) * rowsPerPage,
+    page * rowsPerPage
+  );
+
+  return (
+    <Box sx={{ py: 4, px: 2, maxWidth: '100%' }}>
+      <Container maxWidth="lg">
+        {/* Header */}
+        <Box display="flex" alignItems="center" mb={4}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+            Full Text Search
+          </Typography>
+          <Tooltip title="Toggle search tips">
+            <IconButton size="small" sx={{ ml: 2 }} onClick={() => setShowTips(!showTips)}>
+              <HelpIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Search Tips */}
+        {showTips && (
+          <SearchTips type="fulltext" onClose={() => setShowTips(false)} />
+        )}
+
+        {/* Search Input */}
+        <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+          <Box display="flex" gap={2}>
+            <TextField
+              fullWidth
+              label="Search Query"
+              variant="outlined"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Enter search terms (e.g., 'java AND spring OR python')"
+              sx={{ bgcolor: 'white' }}
+            />
+            <Button
+              variant="contained"
+              onClick={handleSearch}
+              disabled={loading || !query.trim()}
+              startIcon={loading ? <CircularProgress size={20} /> : <SearchIcon />}
+              sx={{ px: 4, alignSelf: 'stretch' }}
+            >
+              Search
+            </Button>
+          </Box>
+        </Paper>
+
+        {/* Error Message */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Results */}
+        {results.length > 0 && (
+          <Box>
+            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+              Showing {paginatedResults.length} of {results.length} results
+            </Typography>
+            
+            <Box mt={3}>
+              {paginatedResults.map((result, index) => (
+                <SearchResult
+                  key={`${result.filename}-${index}`}
+                  result={result}
+                  onView={() => handleViewResume(result.filename)}
+                  onDetails={() => handleViewDetails(result)}
+                />
+              ))}
+            </Box>
+
+            <Box mt={3} display="flex" justifyContent="center">
+              <ResultsPagination
+                count={results.length}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={(newPage) => setPage(newPage)}
+                onRowsPerPageChange={(newRowsPerPage) => {
+                  setRowsPerPage(newRowsPerPage);
+                  setPage(1);
+                }}
+              />
+            </Box>
+          </Box>
+        )}
+
+        {/* No Results */}
+        {!loading && results.length === 0 && query.trim() && (
+          <Alert severity="info">
+            No matching resumes found. Try adjusting your search terms.
+          </Alert>
+        )}
+      </Container>
     </Box>
   );
 };

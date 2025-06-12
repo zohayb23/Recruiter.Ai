@@ -28,13 +28,8 @@ import {
   ArrowBack as ArrowBackIcon,
   Code as ParenthesesIcon,
 } from '@mui/icons-material';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import {
-  fetchSkillSuggestions,
-  fetchRelatedSkills,
-  fetchDidYouMean,
-  saveTemplate,
-} from '../store/searchSlice';
+import { useAppDispatch } from '../store/hooks';
+import { saveTemplate, setSuggestions } from '../store/searchSlice';
 import { QueryGroup, QueryTemplate, QueryTerm, Operator } from '../types';
 
 const SAMPLE_SKILLS = [
@@ -61,14 +56,10 @@ const BooleanSearch: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const {
-    suggestions,
-    loading,
-    error,
-  } = useAppSelector((state) => state.search);
   const [queryGroups, setQueryGroups] = useState<QueryGroup[]>([
     { operator: 'AND', terms: [], parentheses: false },
   ]);
+  const [suggestions, setSuggestionsLocal] = useState<string[]>([]);
   const [templateName, setTemplateName] = useState('');
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
@@ -137,29 +128,12 @@ const BooleanSearch: React.FC = () => {
     }, 2000);
   };
 
-  const handleSkillSearch = async (searchTerm: string) => {
-    if (searchTerm.length < 2) return;
-    
-    // Fetch suggestions as user types
-    dispatch(fetchSkillSuggestions(searchTerm));
-    
-    // If it looks like a complete word, get "did you mean" suggestions
-    if (searchTerm.length > 3 && !searchTerm.endsWith(' ')) {
-      dispatch(fetchDidYouMean(searchTerm));
-    }
-  };
-
-  const handleSkillSelect = async (skill: string, groupIndex: number) => {
-    // Get related skills when a skill is selected
-    dispatch(fetchRelatedSkills(skill));
-    
-    // Add the skill to the query group
-    const newGroups = [...queryGroups];
-    newGroups[groupIndex].terms.push({
-      value: skill,
-      operator: 'AND',
-    });
-    setQueryGroups(newGroups);
+  const handleSkillSearch = (searchTerm: string) => {
+    const filteredSkills = SAMPLE_SKILLS.filter(skill =>
+      skill.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setSuggestionsLocal(filteredSkills);
+    dispatch(setSuggestions(filteredSkills));
   };
 
   return (
@@ -278,7 +252,7 @@ const BooleanSearch: React.FC = () => {
                 <Grid item xs>
                   <Autocomplete
                     multiple
-                    options={suggestions.skills.map(s => s.skill)}
+                    options={suggestions}
                     value={group.terms.map(term => term.value)}
                     onChange={(_, newValue) => handleTermsChange(groupIndex, newValue)}
                     onInputChange={(_, value) => handleSkillSearch(value)}
@@ -294,57 +268,29 @@ const BooleanSearch: React.FC = () => {
                       value.map((option, termIndex) => {
                         const tagProps = getTagProps({ index: termIndex });
                         const term = group.terms[termIndex];
-                        const relatedSkills = suggestions.related;
-                        
                         return (
-                          <Box key={termIndex}>
-                            <Chip
-                              {...tagProps}
-                              label={`${term.operator === 'NOT' ? 'NOT ' : ''}${option}`}
-                              color={term.operator === 'NOT' ? 'error' : group.operator === 'AND' ? 'primary' : 'secondary'}
-                              onClick={() => handleTermOperatorChange(groupIndex, termIndex)}
-                            />
-                            {relatedSkills.length > 0 && (
-                              <Box sx={{ mt: 1 }}>
-                                <Typography variant="caption" color="textSecondary">
-                                  Related:
-                                </Typography>
-                                {relatedSkills.slice(0, 2).map((related, idx) => (
-                                  <Chip
-                                    key={idx}
-                                    label={related}
-                                    size="small"
-                                    variant="outlined"
-                                    onClick={() => handleSkillSelect(related, groupIndex)}
-                                    sx={{ ml: 1 }}
-                                  />
-                                ))}
-                              </Box>
-                            )}
-                          </Box>
+                          <Chip
+                            {...tagProps}
+                            label={`${term.operator === 'NOT' ? 'NOT ' : ''}${option}`}
+                            color={term.operator === 'NOT' ? 'error' : group.operator === 'AND' ? 'primary' : 'secondary'}
+                            onClick={() => handleTermOperatorChange(groupIndex, termIndex)}
+                            sx={{ 
+                              borderRadius: '16px',
+                              '& .MuiChip-deleteIcon': {
+                                color: 'inherit',
+                                opacity: 0.7,
+                                '&:hover': {
+                                  opacity: 1,
+                                },
+                              },
+                            }}
+                          />
                         );
                       })
                     }
                   />
                 </Grid>
                 <Grid item>
-                  {suggestions.didYouMean.length > 0 && (
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="caption" color="textSecondary">
-                        Did you mean:
-                      </Typography>
-                      {suggestions.didYouMean.map((suggestion, idx) => (
-                        <Chip
-                          key={idx}
-                          label={suggestion}
-                          size="small"
-                          variant="outlined"
-                          onClick={() => handleSkillSelect(suggestion, groupIndex)}
-                          sx={{ ml: 1 }}
-                        />
-                      ))}
-                    </Box>
-                  )}
                   <IconButton
                     onClick={() => handleRemoveGroup(groupIndex)}
                     disabled={queryGroups.length === 1}
