@@ -10,14 +10,6 @@ An advanced resume search and matching system that combines full-text and semant
   - Semantic search using dense embeddings
   - Hybrid search capabilities
 
-- **Intelligent Resume Summarization**:
-  - NLTK-based text summarization
-  - Automatic extraction of key information
-  - Context-aware summary generation
-  - Maximum 300 character summaries
-  - Relevance-based sentence scoring
-  - Structured data extraction
-
 - **Boolean Search Builder**:
   - Visual boolean query builder
   - Support for AND, OR, NOT operators
@@ -73,8 +65,6 @@ Recruiter.AI/
 - PyMilvus
 - PDFPlumber
 - Python-docx
-- NLTK
-- Whoosh
 
 ## Quick Start Guide
 

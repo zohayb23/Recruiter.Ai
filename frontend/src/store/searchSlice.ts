@@ -5,6 +5,7 @@ const initialState: SearchState = {
   templates: [],
   currentTemplate: null,
   suggestions: [],
+  recentSearches: [],
   loading: false,
   error: null,
 };

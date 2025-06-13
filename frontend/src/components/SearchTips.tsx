@@ -3,30 +3,65 @@ import {
   Paper,
   Typography,
   IconButton,
-  Box,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Collapse,
+  Divider,
+  Box,
 } from '@mui/material';
 import {
   Close as CloseIcon,
   Search as SearchIcon,
-  Code as CodeIcon,
-  Psychology as PsychologyIcon,
-  Build as BuildIcon,
-  CheckCircleOutline as CheckIcon,
+  Code as BooleanIcon,
+  Psychology as SemanticIcon,
+  Assessment as SkillsIcon,
+  CompareArrows as CombinedIcon,
 } from '@mui/icons-material';
 
 interface SearchTipsProps {
-  type: 'fulltext' | 'semantic' | 'skills' | 'combined';
-  onClose?: () => void;
+  type: 'fulltext' | 'semantic' | 'skills' | 'combined' | 'boolean';
+  onClose: () => void;
 }
 
 const SearchTips: React.FC<SearchTipsProps> = ({ type, onClose }) => {
   const getTipsContent = () => {
     switch (type) {
+      case 'boolean':
+        return {
+          title: 'Boolean Search Tips',
+          icon: <BooleanIcon />,
+          tips: [
+            {
+              title: 'Basic Operators',
+              items: [
+                'Click on terms to toggle between AND, OR, NOT operators',
+                'Group terms together using parentheses',
+                'Use AND for required matches: "java AND spring"',
+                'Use OR for alternatives: "react OR angular"',
+                'Use NOT to exclude: "developer NOT junior"'
+              ]
+            },
+            {
+              title: 'Advanced Features',
+              items: [
+                'Create multiple search groups for complex queries',
+                'Save searches as reusable templates',
+                'Combine operators: "(java OR python) AND (react OR angular)"',
+                'Use skill suggestions for accurate matching'
+              ]
+            },
+            {
+              title: 'Best Practices',
+              items: [
+                'Start with broad terms, then refine with operators',
+                'Group related skills together',
+                'Use templates for common job roles',
+                'Consider synonyms and variations of terms'
+              ]
+            }
+          ]
+        };
       case 'fulltext':
         return {
           title: 'Full Text Search Tips',
@@ -58,117 +93,81 @@ const SearchTips: React.FC<SearchTipsProps> = ({ type, onClose }) => {
             }
           ]
         };
-
       case 'semantic':
         return {
           title: 'Semantic Search Tips',
-          icon: <PsychologyIcon />,
+          icon: <SemanticIcon />,
           tips: [
             {
               title: 'Natural Language',
               items: [
                 'Use natural language descriptions',
-                'Describe the role or skills you need',
-                'Include context and requirements',
-                'Example: "experienced backend developer with cloud infrastructure knowledge"'
+                'Include key skills and requirements',
+                'Describe the role or experience level',
+                'Add industry-specific terms'
               ]
             },
             {
               title: 'Context Awareness',
               items: [
-                'Understands synonyms and related concepts',
-                'Recognizes skill relationships',
-                'Considers industry context',
-                'Matches based on meaning, not just keywords'
-              ]
-            },
-            {
-              title: 'Best Practices',
-              items: [
-                'Be specific about requirements',
-                'Include level of expertise needed',
-                'Mention relevant technologies',
-                'Add important soft skills'
+                'Results match meaning, not just exact words',
+                'Handles synonyms and related concepts',
+                'Understands skill relationships',
+                'Considers experience context'
               ]
             }
           ]
         };
-
       case 'skills':
         return {
-          title: 'Skills Search Tips',
-          icon: <BuildIcon />,
+          title: 'Skills Rating Tips',
+          icon: <SkillsIcon />,
           tips: [
             {
-              title: 'Skills Matching',
+              title: 'Skill Assessment',
               items: [
-                'Enter specific technical skills',
-                'Skills are matched exactly against resumes',
-                'Results show skill match percentage',
-                'Skills are weighted equally in scoring'
+                'List required skills in order of importance',
+                'Specify experience levels when relevant',
+                'Include both technical and soft skills',
+                'Consider related technologies'
               ]
             },
             {
-              title: 'Best Practices',
+              title: 'Rating System',
               items: [
-                'Use standard skill names (e.g., "JavaScript" not "JS")',
-                'Add related technologies for better matches',
-                'Consider both broad and specific skills',
-                'Remove skills to broaden search if needed'
-              ]
-            },
-            {
-              title: 'Results Analysis',
-              items: [
-                'Check matched skills in results',
-                'Review experience with each skill',
-                'Consider overall match percentage',
-                'Look for skill combinations'
+                'Scores are based on skill mentions and context',
+                'Higher weights for recent experience',
+                'Considers skill relationships',
+                'Evaluates project implementations'
               ]
             }
           ]
         };
-
       case 'combined':
+      default:
         return {
           title: 'Combined Search Tips',
-          icon: <CodeIcon />,
+          icon: <CombinedIcon />,
           tips: [
             {
               title: 'Search Types',
               items: [
-                'Full Text: Matches specific keywords and phrases',
-                'Semantic: Understands context and meaning',
-                'Skills: Matches technical requirements',
-                'Adjust weights to prioritize search types'
+                'Full Text: Exact keyword matching',
+                'Semantic: Meaning-based matching',
+                'Skills: Experience-focused matching',
+                'Adjust weights to customize results'
               ]
             },
             {
-              title: 'Query Structure',
+              title: 'Best Results',
               items: [
-                'Include key requirements and skills',
-                'Use natural language descriptions',
-                'Add specific technical terms',
-                'Combine with boolean operators for precision'
-              ]
-            },
-            {
-              title: 'Results Optimization',
-              items: [
-                'Results combine scores from all search types',
-                'Higher weights increase search type importance',
-                'Review individual match scores',
-                'Adjust search parameters for better results'
+                'Use specific technical terms',
+                'Include role requirements',
+                'Specify experience levels',
+                'Consider industry context'
               ]
             }
           ]
-        };
-
-      default:
-        return {
-          title: 'Search Tips',
-          icon: <SearchIcon />,
-          tips: []
         };
     }
   };
@@ -176,44 +175,44 @@ const SearchTips: React.FC<SearchTipsProps> = ({ type, onClose }) => {
   const content = getTipsContent();
 
   return (
-    <Paper elevation={1} sx={{ p: 3, mb: 4, bgcolor: 'primary.50' }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-        <Box display="flex" alignItems="center" gap={1}>
-          {content.icon}
-          <Typography variant="h6" color="primary.main">
-            {content.title}
-          </Typography>
-        </Box>
-        {onClose && (
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        )}
+    <Paper sx={{ p: 3, mb: 4, position: 'relative' }}>
+      <IconButton
+        onClick={onClose}
+        sx={{
+          position: 'absolute',
+          right: 8,
+          top: 8,
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        {content.icon}
+        <Typography variant="h6" sx={{ ml: 1 }}>
+          {content.title}
+        </Typography>
       </Box>
 
-      {content.tips.map((section, index) => (
-        <Box key={index} mb={2}>
-          <Typography variant="subtitle1" color="primary.dark" gutterBottom>
-            {section.title}
-          </Typography>
-          <List dense>
-            {section.items.map((item, itemIndex) => (
-              <ListItem key={itemIndex}>
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <CheckIcon fontSize="small" color="primary" />
-                </ListItemIcon>
-                <ListItemText
-                  primary={item}
-                  primaryTypographyProps={{
-                    variant: 'body2',
-                    color: 'text.primary'
-                  }}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      ))}
+      <List>
+        {content.tips.map((section, index) => (
+          <React.Fragment key={section.title}>
+            {index > 0 && <Divider sx={{ my: 1 }} />}
+            <ListItem sx={{ display: 'block' }}>
+              <Typography variant="subtitle1" color="primary" gutterBottom>
+                {section.title}
+              </Typography>
+              <List dense>
+                {section.items.map((item, itemIndex) => (
+                  <ListItem key={itemIndex}>
+                    <ListItemText primary={item} />
+                  </ListItem>
+                ))}
+              </List>
+            </ListItem>
+          </React.Fragment>
+        ))}
+      </List>
     </Paper>
   );
 };

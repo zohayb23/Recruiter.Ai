@@ -10,13 +10,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import PyPDF2
 from .boolean_search import parse_boolean_expression, evaluate_boolean_expression
-import logging
-from whoosh.qparser import QueryParser, OrGroup
-from whoosh.scoring import BM25F
-from .index_manager import get_index
-from .text_summarizer import summarizer
-
-logger = logging.getLogger(__name__)
 
 def extract_skills(text: str) -> List[str]:
     """Extract skills from text using a predefined list of common skills."""
@@ -114,47 +107,123 @@ def calculate_match_score(content: str, query: str) -> float:
         print(f"Error calculating match score: {str(e)}")
         return 0.0
 
-def search_resumes(query: str, top_k: int = 10) -> List[Dict[str, Any]]:
-    """
-    Search resumes using full text search.
-    """
-    try:
-        ix = get_index()
-        if not ix:
-            logger.error("Index not found")
-            return []
-
-        # Create a query parser with OrGroup for better matching
-        parser = QueryParser("content", ix.schema, group=OrGroup)
-        q = parser.parse(query)
-
-        # Search with the index
-        with ix.searcher(weighting=BM25F) as searcher:
-            results = searcher.search(q, limit=top_k)
+def search_resumes(query: str, use_boolean: bool = False, terms: List[str] = None, top_k: int = 10) -> List[Dict[str, Any]]:
+    """Search through resumes using full text search with boolean logic support."""
+    results = []
+    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    if use_boolean and terms:
+        # Process boolean search
+        boolean_groups = parse_boolean_expression(terms)
+    
+    # Load and search through resumes
+    for source_dir, file_ext in [
+        (os.path.join(parent_dir, "..", "docx_resumes"), ".docx"),
+        (os.path.join(parent_dir, "..", "pdf_resumes"), ".pdf")
+    ]:
+        if not os.path.exists(source_dir):
+            continue
             
-            # Process results
-            processed_results = []
-            for hit in results:
-                # Generate a relevant summary using our summarizer
-                content = hit.get("content", "")
-                summary = summarizer.generate_summary(content, query)
+        for filename in os.listdir(source_dir):
+            if not filename.endswith(file_ext):
+                continue
                 
-                result = {
-                    "filename": hit.get("filename", ""),
-                    "name": hit.get("name", ""),
-                    "content": content,
-                    "summary": summary,
-                    "experience": hit.get("experience", ""),
-                    "skills": hit.get("skills", []),
-                    "location": hit.get("location", ""),
-                    "email": hit.get("email", ""),
-                    "phone": hit.get("phone", ""),
-                    "score": hit.score,  # Add the search score
-                }
-                processed_results.append(result)
-
-            return processed_results
-
-    except Exception as e:
-        logger.error(f"Error in full text search: {str(e)}")
-        return [] 
+            try:
+                # Read file content
+                content = ""
+                file_path = os.path.join(source_dir, filename)
+                
+                if file_ext == ".docx":
+                    doc = docx.Document(file_path)
+                    content = " ".join([para.text for para in doc.paragraphs])
+                elif file_ext == ".pdf":
+                    with open(file_path, 'rb') as file:
+                        pdf_reader = PyPDF2.PdfReader(file)
+                        content = " ".join([page.extract_text() for page in pdf_reader.pages])
+                
+                if not content.strip():
+                    continue
+                
+                # Calculate score based on search type
+                score = 0.0
+                if use_boolean and terms:
+                    # Use boolean evaluation
+                    score = evaluate_boolean_expression(content, boolean_groups)
+                else:
+                    # Use regular full-text matching
+                    score = calculate_match_score(content, query)
+                
+                if score > 0:
+                    # Extract contact information
+                    email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', content)
+                    location_match = re.search(r'([A-Z][a-zA-Z\s]+,\s*[A-Z]{2}(?:\s*\d{5})?)', content)
+                    
+                    # Extract summary
+                    paragraphs = content.split('\n\n')
+                    summary = next(
+                        (p for p in paragraphs if len(p.split()) > 20 and 
+                         ('summary' in p.lower() or 'profile' in p.lower() or 'objective' in p.lower())),
+                        paragraphs[0] if paragraphs else ''
+                    )
+                    
+                    # Extract skills
+                    skills = extract_skills(content)
+                    query_skills = query.lower().split()
+                    matching_skills = [skill for skill in skills if any(q in skill.lower() for q in query_skills)]
+                    missing_skills = [skill for skill in skills if skill not in matching_skills]
+                    
+                    # Extract experience
+                    experience_sections = []
+                    current_section = None
+                    for line in content.split('\n'):
+                        line = line.strip()
+                        if not line:
+                            continue
+                            
+                        # Look for company/role headers
+                        if re.match(r'^[A-Z][^a-z]{0,20}$', line) or re.search(r'\d{4}\s*[-–]\s*(?:\d{4}|present)', line, re.IGNORECASE):
+                            if current_section:
+                                experience_sections.append(current_section)
+                            current_section = {
+                                'company': line,
+                                'duration': re.search(r'(\d{4}\s*[-–]\s*(?:\d{4}|present))', line, re.IGNORECASE).group(1) if re.search(r'\d{4}\s*[-–]\s*(?:\d{4}|present)', line, re.IGNORECASE) else None,
+                                'description': '',
+                                'highlights': []
+                            }
+                        elif current_section:
+                            if line.startswith('•') or line.startswith('-'):
+                                current_section['highlights'].append(line.lstrip('•- '))
+                            else:
+                                current_section['description'] += line + ' '
+                    
+                    if current_section:
+                        experience_sections.append(current_section)
+                    
+                    # Calculate component scores
+                    skills_score = len(matching_skills) / (len(query_skills) if query_skills else 1)
+                    experience_score = sum(1 for exp in experience_sections if any(q in exp['description'].lower() for q in query_skills)) / len(experience_sections) if experience_sections else 0
+                    
+                    results.append({
+                        "filename": filename,
+                        "source": "docx" if file_ext == ".docx" else "pdf",
+                        "content": content[:1000],  # First 1000 chars as preview
+                        "score": score,
+                        "email": email_match.group(0) if email_match else None,
+                        "location": location_match.group(1) if location_match else None,
+                        "summary": summary,
+                        "matching_skills": matching_skills,
+                        "missing_skills": missing_skills,
+                        "matching_experience": experience_sections[:5],  # Top 5 experiences
+                        "match_details": {
+                            "skills_score": skills_score,
+                            "experience_score": experience_score,
+                            "relevance": score
+                        }
+                    })
+            except Exception as e:
+                print(f"Error processing {filename}: {str(e)}")
+                continue
+    
+    # Sort results by score and return top_k
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return {"results": results[:top_k], "total": len(results)} 

@@ -49,17 +49,23 @@ interface RawSearchResult {
 const processSearchResult = (rawResult: RawSearchResult): SearchResultItem => {
   return {
     filename: rawResult.filename || '',
+    source: rawResult.filename || '',
+    content: rawResult.content || '',
+    score: rawResult.score || 0,
     name: rawResult.name || rawResult.filename?.replace(/\.[^/.]+$/, '') || 'Unknown',
     summary: rawResult.summary || rawResult.content?.substring(0, 200) || 'No summary available',
-    experience: rawResult.experience || '',
+    experience: {
+      years: typeof rawResult.experience === 'string' ? 0 : 0,
+      positions: typeof rawResult.experience === 'string' ? [rawResult.experience] : []
+    },
     skills: Array.isArray(rawResult.skills) ? rawResult.skills : [],
     location: rawResult.location || '',
     email: rawResult.email || '',
     phone: rawResult.phone || '',
     scores: {
-      overall: rawResult.score ? Math.round(rawResult.score * 100) : 0,
-      skills: rawResult.match_details?.skills_score ? Math.round(rawResult.match_details.skills_score * 100) : 0,
-      experience: rawResult.match_details?.experience_score ? Math.round(rawResult.match_details.experience_score * 100) : 0,
+      overall: Math.min(100, rawResult.score ? Math.round(rawResult.score * 100) : 0),
+      skills: Math.min(100, rawResult.match_details?.skills_score ? Math.round(rawResult.match_details.skills_score * 100) : 0),
+      experience: Math.min(100, rawResult.match_details?.experience_score ? Math.round(rawResult.match_details.experience_score * 100) : 0),
     }
   };
 };

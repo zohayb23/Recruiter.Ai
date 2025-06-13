@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate, To } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Box,
@@ -12,6 +12,10 @@ import {
   Toolbar,
   Typography,
   Divider,
+  Container,
+  useTheme,
+  useMediaQuery,
+  ListItemButton,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -20,6 +24,8 @@ import {
   TextFields as FullTextIcon,
   Psychology as SemanticIcon,
   Assessment as SkillsIcon,
+  Functions as BooleanIcon,
+  CompareArrows as CombinedIcon,
 } from '@mui/icons-material';
 
 interface LayoutProps {
@@ -27,61 +33,111 @@ interface LayoutProps {
 }
 
 interface MenuItem {
-  text?: string;
-  icon?: React.ReactNode;
-  path?: To;
+  text: string;
+  icon: React.ReactNode;
+  path: string;
   divider?: boolean;
 }
 
-const drawerWidth = 240;
+const DRAWER_WIDTH = 280;
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const menuItems: MenuItem[] = [
+    { text: 'Combined Search', icon: <CombinedIcon />, path: '/combined' },
+    { text: 'Boolean Search', icon: <BooleanIcon />, path: '/boolean' },
+    { text: 'Full Text Search', icon: <FullTextIcon />, path: '/fulltext' },
+    { text: 'Semantic Search', icon: <SemanticIcon />, path: '/semantic' },
+    { text: 'Skills Rating', icon: <SkillsIcon />, path: '/skills' },
+    { text: 'Templates', icon: <SaveIcon />, path: '/templates', divider: true },
+  ];
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const menuItems: MenuItem[] = [
-    { text: 'Boolean Search', icon: <SearchIcon />, path: '/' },
-    { text: 'Full Text Search', icon: <FullTextIcon />, path: '/fulltext' },
-    { text: 'Semantic Search', icon: <SemanticIcon />, path: '/semantic' },
-    { text: 'Skills Rating', icon: <SkillsIcon />, path: '/skills' },
-    { divider: true },
-    { text: 'Templates', icon: <SaveIcon />, path: '/templates' },
-  ];
-
   const drawer = (
-    <div>
-      <Toolbar />
+    <Box>
+      <Toolbar>
+        <Typography
+          variant="h6"
+          noWrap
+          sx={{
+            fontWeight: 700,
+            background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          Recruiter.AI
+        </Typography>
+      </Toolbar>
+      <Divider />
       <List>
-        {menuItems.map((item, index) => (
-          item.divider ? (
-            <Divider key={`divider-${index}`} sx={{ my: 1 }} />
-          ) : (
-            <ListItem
-              button
-              key={item.text}
-              onClick={() => {
-                if (item.path) navigate(item.path);
-                setMobileOpen(false);
-              }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
+        {menuItems.map((item) => (
+          <React.Fragment key={item.text}>
+            {item.divider && <Divider sx={{ my: 1 }} />}
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={location.pathname === item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  if (isMobile) setMobileOpen(false);
+                }}
+                sx={{
+                  borderRadius: 2,
+                  mx: 1,
+                  mb: 0.5,
+                  '&.Mui-selected': {
+                    backgroundColor: theme.palette.primary.main + '1A',
+                    '&:hover': {
+                      backgroundColor: theme.palette.primary.main + '33',
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    color: location.pathname === item.path
+                      ? theme.palette.primary.main
+                      : theme.palette.text.secondary,
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.text}
+                  sx={{
+                    '& .MuiTypography-root': {
+                      fontWeight: location.pathname === item.path ? 600 : 400,
+                      color: location.pathname === item.path
+                        ? theme.palette.primary.main
+                        : theme.palette.text.primary,
+                    },
+                  }}
+                />
+              </ListItemButton>
             </ListItem>
-          )
+          </React.Fragment>
         ))}
       </List>
-    </div>
+    </Box>
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar
         position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        elevation={0}
+        sx={{
+          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
+          ml: { sm: `${DRAWER_WIDTH}px` },
+        }}
       >
         <Toolbar>
           <IconButton
@@ -93,27 +149,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            Recruiter.AI
-          </Typography>
         </Toolbar>
       </AppBar>
+
       <Box
         component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        sx={{ width: { sm: DRAWER_WIDTH }, flexShrink: { sm: 0 } }}
       >
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
+          ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: 'none' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
-              width: drawerWidth,
+              width: DRAWER_WIDTH,
             },
           }}
         >
@@ -125,7 +177,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             display: { xs: 'none', sm: 'block' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
-              width: drawerWidth,
+              width: DRAWER_WIDTH,
+              borderRight: `1px solid ${theme.palette.divider}`,
             },
           }}
           open
@@ -133,16 +186,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {drawer}
         </Drawer>
       </Box>
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
+          minHeight: '100vh',
+          backgroundColor: theme.palette.background.default,
         }}
       >
         <Toolbar />
-        {children}
+        <Container maxWidth="xl">
+          {children}
+        </Container>
       </Box>
     </Box>
   );

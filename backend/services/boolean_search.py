@@ -44,31 +44,41 @@ def load_resumes() -> List[Dict[str, Any]]:
     return resumes
 
 def parse_boolean_expression(terms: List[str]) -> List[Dict[str, Any]]:
-    """Parse boolean expression into structured format."""
+    """Parse boolean expression into structured format with proper NOT handling and parentheses support."""
     operators = {"AND", "OR", "NOT"}
-    current_group = {"operator": "AND", "terms": []}
+    stack = []  # Stack for handling nested groups
+    current_group = {"operator": "AND", "terms": [], "parentheses": False}
     groups = [current_group]
     
     i = 0
     while i < len(terms):
-        term = terms[i]
+        term = terms[i].upper()  # Case-insensitive operator matching
         
         if term == "(":
-            # Start new group
+            # Start new group and push current to stack
             new_group = {"operator": "AND", "terms": [], "parentheses": True}
+            stack.append(current_group)
             groups.append(new_group)
             current_group = new_group
         elif term == ")":
-            # Close current group
-            if len(groups) > 1:
-                groups.pop()
-                current_group = groups[-1]
+            # Close current group and pop from stack
+            if stack:
+                current_group = stack.pop()
         elif term in operators:
             if term == "NOT":
                 # Handle NOT operator
                 if i + 1 < len(terms):
-                    current_group["terms"].append({"value": terms[i + 1], "operator": "NOT"})
-                    i += 1
+                    next_term = terms[i + 1]
+                    if next_term == "(":
+                        # NOT applies to entire group
+                        i += 1  # Skip the opening parenthesis
+                        new_group = {"operator": "AND", "terms": [], "parentheses": True, "negated": True}
+                        stack.append(current_group)
+                        groups.append(new_group)
+                        current_group = new_group
+                    else:
+                        current_group["terms"].append({"value": next_term, "operator": "NOT"})
+                        i += 1  # Skip the next term as we've processed it
             else:
                 # Set operator for next term
                 current_group["operator"] = term
@@ -80,47 +90,50 @@ def parse_boolean_expression(terms: List[str]) -> List[Dict[str, Any]]:
     return groups
 
 def evaluate_boolean_expression(content: str, groups: List[Dict[str, Any]]) -> float:
-    """Evaluate boolean expression against content."""
+    """Evaluate boolean expression against content with enhanced NOT and parentheses support."""
     content_lower = content.lower()
     
     def evaluate_group(group: Dict[str, Any]) -> bool:
         terms = group["terms"]
         operator = group["operator"]
+        is_negated = group.get("negated", False)
         
         if not terms:
             return False
         
         results = []
         for term in terms:
-            if isinstance(term, dict) and "terms" in term:
-                # Evaluate nested group
-                result = evaluate_group(term)
-            else:
-                # Evaluate single term
-                value = term["value"].lower()
-                if term["operator"] == "NOT":
-                    result = value not in content_lower
+            if isinstance(term, dict):
+                if "terms" in term:
+                    # Evaluate nested group
+                    result = evaluate_group(term)
                 else:
-                    result = value in content_lower
-            results.append(result)
+                    # Evaluate single term
+                    value = term["value"].lower()
+                    if term["operator"] == "NOT":
+                        result = value not in content_lower
+                    else:
+                        result = value in content_lower
+                results.append(result)
         
         # Combine results based on operator
-        if operator == "AND":
-            return all(results)
-        elif operator == "OR":
-            return any(results)
-        return False
+        final_result = all(results) if operator == "AND" else any(results)
+        
+        # Apply negation if group is negated
+        return not final_result if is_negated else final_result
     
     # Evaluate all groups
     score = 0
+    total_groups = len(groups)
+    
     for group in groups:
         if evaluate_group(group):
             score += 1
     
-    return score / len(groups) if groups else 0
+    return score / total_groups if total_groups else 0
 
 def boolean_search(terms: List[str], top_k: int = 10) -> List[Dict[str, Any]]:
-    """Perform boolean search on resumes."""
+    """Perform boolean search on resumes with enhanced operators."""
     resumes = load_resumes()
     results = []
     
@@ -131,14 +144,33 @@ def boolean_search(terms: List[str], top_k: int = 10) -> List[Dict[str, Any]]:
     for resume in resumes:
         score = evaluate_boolean_expression(resume["content"], groups)
         if score > 0:
+            # Extract matched terms and their context
+            matched_terms = []
+            for group in groups:
+                for term in group["terms"]:
+                    if isinstance(term, dict) and "value" in term:
+                        value = term["value"].lower()
+                        if value in resume["content"].lower():
+                            # Get context around the match
+                            content = resume["content"].lower()
+                            start = max(0, content.find(value) - 50)
+                            end = min(len(content), content.find(value) + len(value) + 50)
+                            context = "..." + resume["content"][start:end].strip() + "..."
+                            matched_terms.append({
+                                "term": term["value"],
+                                "operator": term["operator"],
+                                "context": context
+                            })
+
             results.append({
                 "filename": resume["filename"],
                 "source": resume["source"],
                 "content": resume["content"],
                 "score": score,
                 "match_details": {
-                    "matched_terms": [term["value"] for group in groups for term in group["terms"] if isinstance(term, dict) and "value" in term],
-                    "operator_groups": [group["operator"] for group in groups]
+                    "matched_terms": matched_terms,
+                    "operator_groups": [group["operator"] for group in groups],
+                    "query_structure": groups
                 }
             })
     

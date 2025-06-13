@@ -23,10 +23,9 @@ from services.dense_search import semantic_search
 from services.skill_ratings import rate_skills
 from services.boolean_search import boolean_search
 from services.search_utils import process_search_result
-from services.text_summarizer import summarizer
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Download required NLTK data
@@ -102,44 +101,22 @@ class CombinedSearchRequest(BaseModel):
 class SkillRatingRequest(BaseModel):
     required_skills: List[str]
 
-def process_search_result(result: dict, query_skills: List[str] = None) -> dict:
-    """Process and enhance search results with summaries and scores."""
-    if not isinstance(result, dict):
-        return {}
-
-    # Generate summary using our summarizer
-    content = result.get("content", "")
-    query = " ".join(query_skills) if query_skills else ""
-    summary = summarizer.generate_summary(content, query)
-
-    # Calculate normalized score
-    score = float(result.get("score", 0))
-    if score > 1:  # Normalize if score is > 1
-        score = min(score / 10, 1.0)
-
-    return {
-        "filename": result.get("filename", ""),
-        "name": result.get("name", ""),
-        "summary": summary,
-        "content": content,
-        "experience": result.get("experience", ""),
-        "skills": result.get("skills", []),
-        "location": result.get("location", ""),
-        "email": result.get("email", ""),
-        "phone": result.get("phone", ""),
-        "score": score,
-        "match_details": result.get("match_details", {})
-    }
-
 # Full Text Search Endpoint
 @app.post("/api/search/fulltext")
 async def fulltext_search(request: SearchRequest):
     try:
-        logger.info(f"Fulltext search request received for query: {request.query}")
-        results = search_resumes(query=request.query, top_k=request.top_k)
-        return {"results": results}
+        logger.info(f"Full text search request received for query: {request.query}")
+        logger.info(f"Boolean search: {request.use_boolean}, Terms: {request.terms}")
+        
+        results = search_resumes(
+            query=request.query,
+            use_boolean=request.use_boolean,
+            terms=request.terms if request.use_boolean else None,
+            top_k=request.top_k
+        )
+        return results
     except Exception as e:
-        logger.error(f"Error in fulltext search: {str(e)}")
+        logger.error(f"Error in full text search: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Semantic Search Endpoint
@@ -147,9 +124,8 @@ async def fulltext_search(request: SearchRequest):
 async def semantic_search_endpoint(request: SearchRequest):
     try:
         logger.info(f"Semantic search request received for query: {request.query}")
-        results = semantic_search(query=request.query, top_k=request.top_k)
-        processed_results = [process_search_result(r) for r in results]
-        return {"results": processed_results}
+        results = semantic_search(request.query, top_k=request.top_k)
+        return {"results": results}
     except Exception as e:
         logger.error(f"Error in semantic search: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -193,7 +169,8 @@ async def combined_search(request: CombinedSearchRequest):
             weight = request.weights.get("fulltext", 0)
             if weight > 0:
                 try:
-                    fulltext_results = search_resumes(query=query, top_k=top_k)
+                    from services.full_text_search import search_resumes as fulltext_search
+                    fulltext_results = fulltext_search(query=query, top_k=top_k)
                     logger.info(f"Fulltext search found {len(fulltext_results)} results")
                     for result in fulltext_results:
                         if not isinstance(result, dict):
@@ -212,6 +189,7 @@ async def combined_search(request: CombinedSearchRequest):
             weight = request.weights.get("semantic", 0)
             if weight > 0:
                 try:
+                    from services.dense_search import semantic_search
                     semantic_results = semantic_search(query=query, top_k=top_k)
                     logger.info(f"Semantic search found {len(semantic_results)} results")
                     for result in semantic_results:
@@ -231,6 +209,7 @@ async def combined_search(request: CombinedSearchRequest):
             weight = request.weights.get("skills", 0)
             if weight > 0:
                 try:
+                    from services.skill_ratings import rate_skills
                     skills_results = rate_skills(query.split(), top_k=top_k)
                     logger.info(f"Skills search found {len(skills_results)} results")
                     for result in skills_results:
@@ -282,8 +261,7 @@ async def skills_rating(request: SkillRatingRequest):
     try:
         logger.info(f"Skills rating request received for skills: {request.required_skills}")
         results = rate_skills(request.required_skills)
-        processed_results = [process_search_result(r, request.required_skills) for r in results]
-        return {"results": processed_results}
+        return {"results": results}
     except Exception as e:
         logger.error(f"Error in skills rating: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

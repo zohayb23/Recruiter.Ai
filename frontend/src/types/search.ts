@@ -1,3 +1,5 @@
+import { QueryGroup } from './index';
+
 export interface Experience {
   company: string | null;
   duration: string | null;
@@ -12,29 +14,40 @@ export interface MatchDetails {
   experience_score?: number;
 }
 
+export interface SearchResultScore {
+  overall?: number;
+  skills?: number;
+  experience?: number;
+  relevance?: number;
+}
+
+export interface MatchedTerm {
+  term: string;
+  operator: string;
+  context: string;
+}
+
 export interface SearchResultItem {
   filename: string;
-  name: string;
-  summary: string;
-  experience?: string;
+  source: string;
+  content: string;
+  summary?: string;
+  score: number;
+  name?: string;
   skills?: string[];
-  location?: string;
+  experience?: {
+    years: number;
+    positions: string[];
+  };
+  scores?: SearchResultScore;
+  match_details?: {
+    matched_terms: MatchedTerm[];
+    operator_groups: string[];
+    query_structure: QueryGroup[];
+  };
   email?: string;
   phone?: string;
-  scores?: {
-    overall: number;
-    skills: number;
-    experience: number;
-  };
-  metadata?: {
-    lastModified?: string;
-    fileSize?: number;
-    fileType?: string;
-  };
-  match_details?: MatchDetails;
-  matching_skills?: string[];
-  missing_skills?: string[];
-  matching_experience?: Experience[];
+  location?: string;
 }
 
 export interface SearchComponentProps extends SearchResultItem {
