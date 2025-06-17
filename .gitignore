@@ -116,4 +116,25 @@ venv.bak/
 
 # Data and embeddings
 /data/
-/pdf_resumes/ 
+/pdf_resumes/
+
+# Binary installers
+*.msi
+*.exe
+*.bin
+
+# Milvus and monitoring
+volumes/
+grafana/
+prometheus/data/
+*.db
+
+# Large files
+*.gz
+*.zip
+*.tar
+*.rar
+
+# IDE and system files
+.DS_Store
+Thumbs.db 
