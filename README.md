@@ -1,6 +1,6 @@
 # Recrutier.AI
 
-An advanced resume search and matching system that combines full-text and semantic search capabilities.
+An advanced resume search and matching system that combines full-text, semantic, and boolean search capabilities.
 
 ## Features
 
@@ -10,12 +10,13 @@ An advanced resume search and matching system that combines full-text and semant
   - Semantic search using dense embeddings
   - Hybrid search capabilities
 
-- **Boolean Search Builder**:
-  - Visual boolean query builder
-  - Support for AND, OR, NOT operators
-  - Grouping with parentheses
-  - Template saving and management
-  - Real-time skill suggestions
+- **Boolean Search System** (New in feature/boolean-search):
+  - Visual boolean query builder with intuitive UI
+  - Support for complex boolean expressions (AND, OR, NOT)
+  - Nested grouping with parentheses
+  - Real-time skill suggestions and validation
+  - Search template management
+  - Advanced skill matching algorithms
 
 - **Multiple Format Support**:
 
@@ -77,10 +78,11 @@ Recruiter.AI/
 
 ### Installation Steps
 
-1. Clone the repository:
+1. Clone the repository and switch to boolean search feature branch:
 ```bash
 git clone https://github.com/zohayb23/Recruiter.Ai.git
 cd Recruiter.AI
+git checkout feature/boolean-search
 ```
 
 2. Set up the Backend:
@@ -230,19 +232,69 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Boolean Search Features
 
-The boolean search builder provides a user-friendly interface for creating complex search queries:
+The boolean search system provides a sophisticated interface for creating and managing complex search queries:
 
-- **Visual Query Building**:
+### Query Building
+- **Visual Query Builder**:
   - Drag-and-drop interface for query construction
-  - Real-time preview of search results
-  - Support for nested boolean operations
+  - Real-time query validation and preview
+  - Support for nested boolean operations (AND, OR, NOT)
+  - Parentheses grouping for complex expressions
 
-- **Template Management**:
-  - Save frequently used search patterns
-  - Load and modify existing templates
-  - Share templates across team members
-
-- **Skill Suggestions**:
-  - Auto-complete for skill input
+- **Skill Management**:
+  - Auto-complete suggestions for skills
   - Standardized skill terminology
   - Skill relevance indicators
+  - Skill synonyms and variations handling
+
+- **Template System**:
+  - Save and manage frequently used search patterns
+  - Load and modify existing templates
+  - Share templates across team members
+  - Template categories and tagging
+
+### Search Capabilities
+- **Advanced Boolean Operations**:
+  - AND: Match all specified criteria
+  - OR: Match any of the specified criteria
+  - NOT: Exclude specific criteria
+  - Nested grouping: (Skill1 AND Skill2) OR (Skill3 AND Skill4)
+
+- **Skill Matching**:
+  - Exact skill matches
+  - Skill level consideration
+  - Experience duration matching
+  - Related skills detection
+
+### Performance Optimization
+- Efficient boolean expression evaluation
+- Cached skill suggestions
+- Optimized query parsing
+- Real-time result updates
+
+### Usage Example
+```typescript
+// Example boolean search query
+const query = {
+  operator: 'AND',
+  children: [
+    {
+      operator: 'OR',
+      children: ['React', 'Angular', 'Vue']
+    },
+    {
+      operator: 'AND',
+      children: ['TypeScript', 'Node.js']
+    },
+    {
+      operator: 'NOT',
+      children: ['PHP']
+    }
+  ]
+};
+```
+
+This query would find candidates who:
+- Know either React, Angular, or Vue
+- AND have experience with both TypeScript and Node.js
+- AND do not list PHP as a skill
