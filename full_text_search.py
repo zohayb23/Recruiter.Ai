@@ -43,7 +43,7 @@ fields = [
             FieldSchema(name="sparse", dtype=DataType.FLOAT_VECTOR, dim=384),
             FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
             FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=32)
-]
+        ]
         schema = CollectionSchema(fields=fields, description="Resume collection for full-text search")
         
         # Create collection
