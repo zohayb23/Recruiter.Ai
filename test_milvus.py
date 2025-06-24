@@ -1,50 +1,67 @@
 from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType, utility
-import random
 
-# Connect to Milvus
-connections.connect(host='localhost', port='19530')
+def create_document_collection():
+    try:
+        # Connect to Milvus
+        print("Connecting to Milvus...")
+        connections.connect(
+            alias="default",
+            host='localhost',
+            port='19530'
+        )
+        
+        collection_name = "document_store"
+        dim = 1536  # Dimension for text-embedding-ada-002 model
 
-# Collection parameters
-collection_name = 'test_collection'
-dim = 128
+        # Drop collection if it exists
+        if utility.has_collection(collection_name):
+            print(f"Collection '{collection_name}' already exists. Dropping it...")
+            utility.drop_collection(collection_name)
 
-# Drop collection if it exists
-if utility.has_collection(collection_name):
-    utility.drop_collection(collection_name)
+        # Define fields for the collection
+        fields = [
+            FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+            FieldSchema(name="doc_id", dtype=DataType.VARCHAR, max_length=100),  # Custom document identifier
+            FieldSchema(name="content_vector", dtype=DataType.FLOAT_VECTOR, dim=dim),
+            FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=500),
+            FieldSchema(name="file_path", dtype=DataType.VARCHAR, max_length=500),
+            FieldSchema(name="doc_type", dtype=DataType.VARCHAR, max_length=50),  # e.g., "resume", "job_description"
+        ]
 
-# Define schema
-id_field = FieldSchema(name='id', dtype=DataType.INT64, is_primary=True, auto_id=False)
-vector_field = FieldSchema(name='vector', dtype=DataType.FLOAT_VECTOR, dim=dim)
-schema = CollectionSchema(fields=[id_field, vector_field], description='Test collection')
+        # Create collection schema
+        schema = CollectionSchema(
+            fields=fields,
+            description="Document store for embeddings and metadata"
+        )
 
-# Create collection
-collection = Collection(name=collection_name, schema=schema)
+        # Create collection
+        print(f"\nCreating collection '{collection_name}'...")
+        collection = Collection(name=collection_name, schema=schema)
 
-# Insert data
-num_entities = 1000
-vectors = [[random.random() for _ in range(dim)] for _ in range(num_entities)]
-ids = list(range(num_entities))
-collection.insert([ids, vectors])
+        # Create index for vector field
+        print("\nCreating index on vector field...")
+        index_params = {
+            "metric_type": "COSINE",  # or "L2" for euclidean distance
+            "index_type": "IVF_FLAT",
+            "params": {"nlist": 1024}
+        }
+        collection.create_index(field_name="content_vector", index_params=index_params)
+        
+        print("\nCollection created successfully!")
+        print("\nCollection schema:")
+        print(collection.schema)
+        
+        # Show collection statistics
+        print("\nCollection statistics:")
+        print(f"Number of entities: {collection.num_entities}")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+    
+    finally:
+        if connections.has_connection("default"):
+            print("\nClosing connection...")
+            connections.disconnect("default")
 
-# Create index
-index_params = {
-    'metric_type': 'L2',
-    'index_type': 'IVF_FLAT',
-    'params': {'nlist': 128}
-}
-collection.create_index('vector', index_params)
-collection.load()
-
-# Perform searches
-topK = 5
-search_params = {'metric_type': 'L2', 'params': {'nprobe': 10}}
-query_vector = [random.random() for _ in range(dim)]
-for _ in range(10):
-    results = collection.search(
-        data=[query_vector],
-        anns_field='vector',
-        param=search_params,
-        limit=topK
-    )
-
-print('Milvus test operations completed successfully!') 
+if __name__ == "__main__":
+    create_document_collection() 

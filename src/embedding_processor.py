@@ -2,55 +2,137 @@ import pandas as pd
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import torch
-import json
-from pathlib import Path
-import pdfplumber
-import os
-import docx
+from google.cloud import storage
 from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType, utility
+import asyncio
+from typing import AsyncIterator, Dict, Any
+import aiohttp
+import json
+import uuid
 
 class ResumeEmbeddingProcessor:
-    def __init__(self, model_name='all-MiniLM-L6-v2', milvus_host='localhost', milvus_port='19530'):
+    def __init__(self, model_name='all-MiniLM-L6-v2', milvus_host='localhost', milvus_port='19530',
+                 gcs_bucket_name=None):
         self.model = SentenceTransformer(model_name)
         self.milvus_host = milvus_host
         self.milvus_port = milvus_port
         self.collection_name = "resume_embeddings"
+        self.gcs_bucket_name = gcs_bucket_name
+        self.storage_client = storage.Client() if gcs_bucket_name else None
         self._connect_milvus()
-        # Drop the collection if it exists so we can create it with the new schema
-        if self.collection_name in utility.list_collections():
-            print(f"[INFO] Dropping existing collection '{self.collection_name}' to update schema.")
-            utility.drop_collection(self.collection_name)
         self._create_collection_if_not_exists()
         
-    def _connect_milvus(self):
-        connections.connect("default", host=self.milvus_host, port=self.milvus_port)
-
-    def _create_collection_if_not_exists(self):
-        if self.collection_name in utility.list_collections():
+    async def process_resume_stream(self, resume_stream: AsyncIterator[Dict[str, Any]]):
+        """Process resumes as they come in from the stream"""
+        batch = []
+        batch_size = 32  # Adjust based on memory constraints
+        
+        async for resume in resume_stream:
+            # Extract text from resume dict
+            text = resume.get('text', '')
+            if not text:
+                continue
+                
+            # Preprocess
+            processed_text = self.preprocess_text(text)
+            batch.append({
+                'text': processed_text,
+                'metadata': resume.get('metadata', {})
+            })
+            
+            if len(batch) >= batch_size:
+                await self._process_batch(batch)
+                batch = []
+                
+        # Process remaining items
+        if batch:
+            await self._process_batch(batch)
+    
+    async def _process_batch(self, batch):
+        """Process a batch of resumes"""
+        texts = [item['text'] for item in batch]
+        metadata = [item['metadata'] for item in batch]
+        
+        # Generate embeddings
+        embeddings = self.model.encode(
+            texts,
+            batch_size=len(texts),
+            show_progress_bar=False,
+            convert_to_tensor=True
+        )
+        
+        # Store in Milvus
+        self.insert_to_milvus(embeddings, metadata)
+        
+        # Store metadata in GCS if configured
+        if self.storage_client:
+            await self._store_metadata_gcs(metadata)
+    
+    async def _store_metadata_gcs(self, metadata_batch):
+        """Store metadata in Google Cloud Storage"""
+        if not self.gcs_bucket_name:
             return
-        fields = [
-            FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=384),
-            FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
-            FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=16),
-            FieldSchema(name="name", dtype=DataType.VARCHAR, max_length=128),
-            FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
-        ]
-        schema = CollectionSchema(fields, description="Resume Embeddings")
-        Collection(self.collection_name, schema)
+            
+        bucket = self.storage_client.bucket(self.gcs_bucket_name)
+        for meta in metadata_batch:
+            blob_name = f"metadata/{meta.get('id', str(uuid.uuid4()))}.json"
+            blob = bucket.blob(blob_name)
+            blob.upload_from_string(
+                json.dumps(meta),
+                content_type='application/json'
+            )
 
     def insert_to_milvus(self, embeddings, metadata):
+        """Insert embeddings and metadata into Milvus"""
         col = Collection(self.collection_name)
         data = [
             embeddings.tolist(),
-            [m.get('filename', '') for m in metadata],
             [m.get('source', '') for m in metadata],
-            [m.get('name', '') for m in metadata],
-            [m.get('text', '') for m in metadata],
+            [m.get('id', '') for m in metadata],
+            [m.get('title', '') for m in metadata],
+            [json.dumps(m) for m in metadata],  # Store full metadata as JSON
         ]
-        print(f"[DEBUG] Inserting {len(embeddings)} embeddings into Milvus...")
-        result = col.insert(data)
-        print(f"[DEBUG] Milvus insert result: {result}")
+        col.insert(data)
+        
+    def _create_collection_if_not_exists(self):
+        """Create Milvus collection with updated schema"""
+        if self.collection_name in utility.list_collections():
+            return
+            
+        fields = [
+            FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=384),
+            FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=64),
+            FieldSchema(name="resume_id", dtype=DataType.VARCHAR, max_length=128),
+            FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=256),
+            FieldSchema(name="metadata", dtype=DataType.VARCHAR, max_length=65535),
+        ]
+        schema = CollectionSchema(fields, description="Resume Embeddings")
+        Collection(self.collection_name, schema)
+        
+    def preprocess_text(self, text):
+        """Basic text preprocessing"""
+        if isinstance(text, str):
+            return ' '.join(text.lower().split())
+        return ''
+
+    async def process_api_stream(self, api_url: str, api_key: str, params: Dict[str, Any] = None):
+        """Process resumes directly from an API stream"""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                api_url,
+                headers={'Authorization': f'Bearer {api_key}'},
+                params=params
+            ) as response:
+                async for resume in response.content:
+                    try:
+                        resume_data = json.loads(resume)
+                        await self.process_resume_stream([resume_data])
+                    except json.JSONDecodeError:
+                        continue  # Skip invalid JSON
+
+    def _connect_milvus(self):
+        connections.connect("default", host=self.milvus_host, port=self.milvus_port)
 
     def extract_text_from_pdf(self, pdf_path):
         """Extract text from a PDF file using pdfplumber."""
@@ -111,13 +193,6 @@ class ResumeEmbeddingProcessor:
         self.data = data
         print(f"[DEBUG] Loaded {len(data)} resumes.")
         return data
-    
-    def preprocess_text(self, text):
-        """Basic text preprocessing"""
-        if isinstance(text, str):
-            # Remove extra whitespace and convert to lowercase
-            return ' '.join(text.lower().split())
-        return ''
     
     def generate_embeddings(self):
         """Generate embeddings for the loaded data"""

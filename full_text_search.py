@@ -4,6 +4,7 @@ from pymilvus import connections, Collection, DataType, utility, CollectionSchem
 from sentence_transformers import SentenceTransformer
 from collections import Counter
 import re
+import time
 
 # Add 'src' to Python path to import ResumeEmbeddingProcessor
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
@@ -13,20 +14,41 @@ from embedding_processor import ResumeEmbeddingProcessor
 COLLECTION_NAME = "resume_fulltext"
 HOST = "localhost"
 PORT = "19530"
+MAX_RETRIES = 3
+RETRY_DELAY = 5  # seconds
 
 def get_milvus_client():
-    """Get a Milvus client instance."""
-    try:
-        connections.connect(
-            alias="default",
-            host=HOST,
-            port=PORT
-        )
-        print("[INFO] Client connected successfully")
-        return True
-    except Exception as e:
-        print(f"[ERROR] Failed to connect to Milvus: {e}")
-        return False
+    """Get a Milvus client instance with retries."""
+    for attempt in range(MAX_RETRIES):
+        try:
+            # Disconnect if there's an existing connection
+            try:
+                connections.disconnect("default")
+            except:
+                pass
+
+            print(f"[INFO] Attempting to connect to Milvus (attempt {attempt + 1}/{MAX_RETRIES})")
+            connections.connect(
+                alias="default",
+                host=HOST,
+                port=PORT,
+                timeout=30  # Increase timeout to 30 seconds
+            )
+            
+            # Test the connection by listing collections
+            utility.list_collections()
+            
+            print("[INFO] Successfully connected to Milvus")
+            return True
+            
+        except Exception as e:
+            print(f"[WARNING] Connection attempt {attempt + 1} failed: {e}")
+            if attempt < MAX_RETRIES - 1:
+                print(f"[INFO] Retrying in {RETRY_DELAY} seconds...")
+                time.sleep(RETRY_DELAY)
+            else:
+                print("[ERROR] Failed to connect to Milvus after all retries")
+                return False
 
 def create_collection():
     """Create the collection with proper schema."""
@@ -34,11 +56,11 @@ def create_collection():
         # Drop existing collection if it exists
         if utility.has_collection(COLLECTION_NAME):
             print(f"[INFO] Dropping existing collection {COLLECTION_NAME}")
-    utility.drop_collection(COLLECTION_NAME)
+            utility.drop_collection(COLLECTION_NAME)
 
         # Define collection schema
-fields = [
-    FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+        fields = [
+            FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
             FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
             FieldSchema(name="sparse", dtype=DataType.FLOAT_VECTOR, dim=384),
             FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
@@ -167,7 +189,7 @@ def insert_resume_data():
     num_entities = collection.num_entities
     print(f"[INFO] Successfully inserted {total_inserted} documents")
     
-if num_entities == 0:
+    if num_entities == 0:
         print("[ERROR] Insertion appeared to succeed but collection is empty")
         return False
         
@@ -197,209 +219,160 @@ def ensure_collection_ready():
             index_params = {
                 "index_type": "IVF_FLAT",
                 "metric_type": "L2",
-                "params": {
-                    "nlist": 1024
-                }
+                "params": {"nlist": 1024}
             }
             collection.create_index("sparse", index_params)
-            print("[INFO] Index created successfully")
+            print("[INFO] Created index")
+        
+        # Load collection
+        collection.load()
+        return True
     except Exception as e:
         print(f"[ERROR] Failed to check/create index: {e}")
         return False
-    
-    # Load collection
-    try:
-        print(f"[INFO] Loading collection {COLLECTION_NAME}...")
-        collection.load()
-        print("[INFO] Collection loaded successfully")
-        return True
-    except Exception as e:
-        print(f"[ERROR] Failed to load collection: {e}")
-        return False
 
 def get_relevant_snippet(text: str, query: str, context_words: int = 50) -> str:
-    """Extract the most relevant snippet from the text containing the query terms."""
-    # Clean and normalize the text
-    text = re.sub(r'\s+', ' ', text).strip()
+    """Get a relevant snippet of text containing the query terms."""
+    # Convert query to lowercase for case-insensitive matching
+    text_lower = text.lower()
+    query_lower = query.lower()
     
-    # Split query into terms
-    query_terms = [term.lower() for term in query.split()]
+    # Find the first occurrence of any query term
+    best_pos = -1
+    query_terms = query_lower.split()
+    for term in query_terms:
+        pos = text_lower.find(term)
+        if pos != -1:
+            best_pos = pos if best_pos == -1 else min(best_pos, pos)
     
-    # Find the best matching position
-    best_position = 0
-    best_score = 0
+    if best_pos == -1:
+        # If no query terms found, return the start of the text
+        return text[:200] + "..."
     
-    # Split text into words
+    # Get context around the match
     words = text.split()
+    total_chars = 0
+    start_idx = 0
+    for idx, word in enumerate(words):
+        total_chars += len(word) + 1  # +1 for space
+        if total_chars > best_pos:
+            start_idx = max(0, idx - context_words)
+            break
     
-    for i in range(len(words)):
-        score = 0
-        # Check how many query terms appear near this position
-        for term in query_terms:
-            # Look for the term in a window around the current position
-            window_start = max(0, i - context_words)
-            window_end = min(len(words), i + context_words)
-            window = ' '.join(words[window_start:window_end]).lower()
-            if term in window:
-                score += 1
-        if score > best_score:
-            best_score = score
-            best_position = i
+    end_idx = min(len(words), start_idx + context_words * 2)
+    snippet = ' '.join(words[start_idx:end_idx])
     
-    # Extract the snippet
-    start = max(0, best_position - context_words)
-    end = min(len(words), best_position + context_words)
-    snippet = ' '.join(words[start:end])
-    
-    # Add ellipsis if needed
-    if start > 0:
-        snippet = '...' + snippet
-    if end < len(words):
-        snippet = snippet + '...'
-    
-    return snippet
+    return snippet + "..."
 
 def search_resumes(query, top_k=10, source=None):
-    """Search resumes using full-text search."""
-    # Handle empty or whitespace-only queries
-    if not query or not query.strip():
-        return []
-        
-    get_milvus_client()
-    
-    # Ensure collection is ready
-    if not ensure_collection_ready():
-        return []
-    
-    # Initialize the sentence transformer model
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    
-    # Generate embedding for the query
-    query_embedding = model.encode(query)
-    
-    # Search parameters for vector search
-    search_params = {
-        "metric_type": "L2",
-        "params": {
-            "nprobe": 10  # Number of clusters to search
-        }
-    }
-    
+    """Search resumes using the query text."""
     try:
+        # Try to connect to Milvus
+        if not get_milvus_client():
+            print("[ERROR] Could not establish connection to Milvus")
+            return []
+
+        # Check if collection exists
+        if not utility.has_collection(COLLECTION_NAME):
+            print(f"[INFO] Collection {COLLECTION_NAME} does not exist. Creating...")
+            if not create_collection():
+                return []
+            if not insert_resume_data():
+                return []
+
         collection = Collection(COLLECTION_NAME)
-        # First get all results
+        
+        try:
+            collection.load()
+        except Exception as e:
+            print(f"[WARNING] Error loading collection: {e}")
+            try:
+                # Try to recreate and load
+                create_collection()
+                insert_resume_data()
+                collection = Collection(COLLECTION_NAME)
+                collection.load()
+            except Exception as e:
+                print(f"[ERROR] Failed to recreate collection: {e}")
+                return []
+
+        # Initialize the model
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        
+        # Generate query embedding
+        query_embedding = model.encode(query)
+        
+        # Prepare search parameters
+        search_params = {
+            "metric_type": "L2",
+            "params": {"nprobe": 10}
+        }
+        
+        # Execute search
         results = collection.search(
             data=[query_embedding.tolist()],
-            anns_field='sparse',
+            anns_field="sparse",
             param=search_params,
-            limit=top_k * 3,  # Get more results to allow for better filtering
-            output_fields=['text', 'filename', 'source']
+            limit=top_k,
+            output_fields=["text", "filename", "source"]
         )
-        
-        # Format and filter results
-        formatted_results = []
-        seen_filenames = set()  # Track unique filenames for non-CSV files
-        
-        # In pymilvus 2.3.3, results is a list of hits
-        for hit in results[0]:  # Get first query's results
-            try:
-                # Access entity fields directly
-                filename = hit.entity.filename
-                source = hit.entity.source.lower()
-                
-                # Only deduplicate non-CSV files
-                if source != 'csv' and filename in seen_filenames:
-                    continue
-                    
-                text = hit.entity.text
-                # Find the most relevant snippet containing the search terms
-                snippet = get_relevant_snippet(text, query)
-                
+
+        # Process results
+        processed_results = []
+        for hits in results:
+            for hit in hits:
                 result = {
-                    'filename': filename,
-                    'source': hit.entity.source,
-                    'content': snippet,
-                    'score': hit.score
+                    'text': hit.entity.get('text'),
+                    'filename': hit.entity.get('filename'),
+                    'source': hit.entity.get('source'),
+                    'score': hit.distance
                 }
-                
-                # Filter by source if specified
                 if source is None or result['source'].lower() == source.lower():
-                    formatted_results.append(result)
-                    if source != 'csv':  # Only track seen filenames for non-CSV files
-                        seen_filenames.add(filename)
-                    if len(formatted_results) >= top_k:
-                        break
-            except Exception as e:
-                print(f"[WARNING] Skipping result due to error: {e}")
-                continue
-        
-        return formatted_results[:top_k]  # Return only top_k results
-        
+                    processed_results.append(result)
+
+        return processed_results[:top_k]
+
     except Exception as e:
         print(f"[ERROR] Search failed: {e}")
         return []
+    finally:
+        # Always try to disconnect cleanly
+        try:
+            connections.disconnect("default")
+        except:
+            pass
 
 def main():
-    # Always drop, recreate, and insert data for debugging
-    create_collection()
-    insert_resume_data()
-    # Example search query
-    query = "Salesforce professional with 50+ years"
-    results = search_resumes(query, top_k=500)  # Get more results to allow filtering by source
-
+    """Main function for testing."""
+    # Example search
+    query = "python developer with machine learning experience"
+    print(f"\nSearching for: {query}")
+    
+    results = search_resumes(query, top_k=5)
+    
     if not results:
         print("No results found.")
         return
-
-    # Print unique source values for debugging
-    unique_sources = set(r.get("source", "").lower() for r in results)
-    print(f"[DEBUG] Unique sources in results: {unique_sources}")
-
-    # Deduplicate by filename
-    seen_filenames = set()
-    deduped_results = []
-    for r in results:
-        fname = r.get("filename", "")
-        if fname not in seen_filenames:
-            deduped_results.append(r)
-            seen_filenames.add(fname)
-
-    # Group results by source (case-insensitive, handle unknowns)
-    grouped = {"csv": [], "docx": [], "pdf": [], "other": []}
-    for r in deduped_results:
-        source = r.get("source", "").lower()
-        if source in grouped and len(grouped[source]) < 50:
-            grouped[source].append(r)
-        elif source not in grouped and len(grouped["other"]) < 50:
-            grouped["other"].append(r)
-
+    
+    print("\nSearch Results:")
+    print("=" * 80)
+    
     def highlight(text, term):
-        # Highlight all case-insensitive occurrences of the search term
-        return re.sub(f"({re.escape(term)})", r"\033[1;31m\1\033[0m", text, flags=re.IGNORECASE)
-
-    def get_snippet(text, term, window=200):
-        # Find the first occurrence of the term (case-insensitive)
-        match = re.search(re.escape(term), text, re.IGNORECASE)
-        if match:
-            start = max(match.start() - window, 0)
-            end = min(match.end() + window, len(text))
-            snippet = text[start:end].replace('\n', ' ')
-else:
-            snippet = text[:2*window].replace('\n', ' ')
-        return highlight(snippet, term)
-
-    print(f"\n{'='*25} SEARCH RESULTS FOR: '{query}' {'='*25}\n")
-
-    # Print results by source
-    for source in ["csv", "docx", "pdf", "other"]:
-        print(f"\n{'='*20} {source.upper()} RESULTS {'='*20}\n")
-        if not grouped[source]:
-            print("No results found for this source.")
-            continue
-        for i, result in enumerate(grouped[source], 1):
-            print(f"[{i}] Filename: {result['filename']} | Score: {result['score']:.2f}")
-            print(f"Snippet: {result['content']}")
-            print("-" * 60)
+        """Highlight search terms in text."""
+        return text.replace(term, f"\033[1m{term}\033[0m")
+    
+    for idx, result in enumerate(results, 1):
+        print(f"\nResult {idx}:")
+        print(f"File: {result['filename']}")
+        print(f"Source: {result['source']}")
+        print(f"Score: {result['score']:.4f}")
+        print("\nSnippet:")
+        snippet = result['snippet']
+        # Highlight query terms
+        for term in query.lower().split():
+            snippet = highlight(snippet, term)
+        print(snippet)
+        print("-" * 80)
 
 if __name__ == "__main__":
     main()
