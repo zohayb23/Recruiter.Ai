@@ -4,59 +4,38 @@ cluster:
 kafka:
   enabled: true
   replicaCount: 1
-  heapOpts: "-Xmx256M -Xms256M"
-  extraEnvVars:
-    - name: KAFKA_LOG_CLEANER_ENABLE
-      value: "false"
-    - name: KAFKA_NUM_PARTITIONS
-      value: "1"
-    - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-      value: "1"
-    - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
-      value: "1"
-    - name: KAFKA_CFG_DEFAULT_REPLICATION_FACTOR
-      value: "1"
-    - name: KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR
-      value: "1"
-  startupProbe:
-    enabled: true
-    initialDelaySeconds: 60
-    periodSeconds: 20
-    timeoutSeconds: 5
-    failureThreshold: 10
-  persistence:
-    enabled: false
   resources:
     requests:
-      memory: 384Mi
-      cpu: 100m
+      memory: "256Mi"
+      cpu: "100m"
     limits:
-      memory: 512Mi
-      cpu: 200m
-  zookeeper:
-    enabled: true
-    replicaCount: 1
-    extraEnvVars:
-      - name: ZOO_HEAP_SIZE
-        value: "128"
-      - name: ZOO_MAX_CLIENT_CNXNS
-        value: "60"
-    persistence:
-      enabled: false
-    resources:
-      requests:
-        memory: 192Mi
-        cpu: 100m
-      limits:
-        memory: 256Mi
-        cpu: 200m
+      memory: "512Mi"
+      cpu: "200m"
 
-metrics:
-  serviceMonitor:
-    enabled: false
+etcd:
+  enabled: true
+  replicaCount: 1
+  persistence:
+    storageClass: "standard"
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+msgStreamType: "kafka"
 
 pulsar:
   enabled: false
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
 
 pulsarv3:
   enabled: false
@@ -71,28 +50,89 @@ pulsarv3:
   recovery:
     enabled: false
 
-etcd:
-  replicaCount: 1
-
 minio:
   mode: standalone
-  replicas: 1
-
-msgStreamType: "kafka"
+  replicaCount: 1
+  persistence:
+    storageClass: "standard"
+    size: 20Gi
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
 
 queryNode:
   replicas: 1
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
 dataNode:
   replicas: 1
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
 indexNode:
   replicas: 1
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
 proxy:
   replicas: 1
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
 rootCoord:
   replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
 queryCoord:
   replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
 dataCoord:
   replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
 indexCoord:
-  replicas: 1 
+  replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m" 

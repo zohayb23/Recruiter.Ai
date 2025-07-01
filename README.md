@@ -35,6 +35,8 @@ An advanced resume search and matching system that combines full-text and semant
 
 ## Installation
 
+### Local Development
+
 1. Clone the repository:
 
 ```bash
@@ -60,6 +62,10 @@ pip install -r requirements.txt
 ```bash
 docker-compose -f docker-compose-milvus.yml up -d
 ```
+
+### Cloud Deployment
+
+For production deployment on Google Kubernetes Engine (GKE), please refer to our [GKE Deployment Guide](docs/gke-milvus-deployment.md).
 
 ## Usage
 
