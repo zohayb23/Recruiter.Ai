@@ -14,9 +14,21 @@ spec:
       labels:
         app: resume-embedding
     spec:
+      imagePullSecrets:
+      - name: gcr-json-key
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
       containers:
       - name: resume-embedding
-        image: resume-embedding:latest
+        image: gcr.io/recruiter-ai/resume-embedding:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
         resources:
           requests:
             memory: "2Gi"
@@ -26,11 +38,25 @@ spec:
             cpu: "1000m"
         ports:
         - containerPort: 8000
+        env:
+        - name: MILVUS_URI
+          valueFrom:
+            secretKeyRef:
+              name: resume-embedding-app-secrets
+              key: MILVUS_URI
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: resume-embedding-app-secrets
+              key: API_KEY
         volumeMounts:
         - name: model-storage
           mountPath: /app/models
+          readOnly: true
         - name: data-storage
           mountPath: /app/data
+        - name: tmp-storage
+          mountPath: /tmp
       volumes:
       - name: model-storage
         persistentVolumeClaim:
@@ -38,11 +64,16 @@ spec:
       - name: data-storage
         persistentVolumeClaim:
           claimName: data-pvc
+      - name: tmp-storage
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: resume-embedding-service
+  annotations:
+    cloud.google.com/backend-config: '{"default": "resume-embedding-backend-config"}'
+    cloud.google.com/security-policy: "resume-embedding-security-policy"
 spec:
   selector:
     app: resume-embedding

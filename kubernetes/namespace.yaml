@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: recruiter-ai
+  labels:
+    name: recruiter-ai
+    environment: production 

@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: resume-embedding-network-policy
+  namespace: recruiter-ai
+spec:
+  podSelector:
+    matchLabels:
+      app: resume-embedding
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: milvus  # Allow traffic from Milvus pods
+    ports:
+    - protocol: TCP
+      port: 8000  # Application port
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: milvus  # Allow traffic to Milvus pods
+    ports:
+    - protocol: TCP
+      port: 19530  # Milvus port
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    - podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53  # DNS resolution
+    - protocol: TCP
+      port: 53  # DNS resolution 

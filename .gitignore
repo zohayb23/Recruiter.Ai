@@ -2,139 +2,40 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environment
 .env
 .venv
-env/
 venv/
 ENV/
 
-# IDE
-.idea/
+# Node
+node_modules/
+.npm
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs
 .vscode/
+.idea/
 *.swp
 *.swo
 
 # Project specific
-pdf_resumes/
-docx_resumes/
-csv_resumes/
-*.pdf
-*.docx
-*.csv
-
-# Logs
-*.log
-logs/
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# pipenv
-Pipfile.lock
-
-# mypy
-.mypy_cache/
-.dmypy.json
-.dmypy-working/
-
-# Pyre type checker
-.pyre/
-
-# VS Code
-.vscode/
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Data and embeddings
-/data/
-/pdf_resumes/
-
-# Binary installers
-*.msi
-*.exe
-*.bin
-
-# Milvus and monitoring
 volumes/
-grafana/
-prometheus/data/
-*.db
+csv_resumes/*
+!csv_resumes/.gitkeep
+pdf_resumes/*
+!pdf_resumes/.gitkeep
+docx_resumes/*
+!docx_resumes/.gitkeep
 
-# Large files
-*.gz
-*.zip
-*.tar
-*.rar
+# Kubernetes secrets
+*-secret.yaml
+*-secrets.yaml
 
-# IDE and system files
+# Local development
 .DS_Store
-Thumbs.db 
+*.log
+local_settings.py
+db.sqlite3 

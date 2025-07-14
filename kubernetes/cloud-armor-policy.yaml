@@ -1,0 +1,114 @@
+apiVersion: compute.google.com/v1
+kind: SecurityPolicy
+metadata:
+  name: resume-embedding-security-policy
+spec:
+  rules:
+  # Default rule to deny all traffic
+  - action: deny(403)
+    priority: 2147483647
+    match:
+      versioned_expr: SRC_IPS_V1
+      config:
+        srcIpRanges: ['*']
+
+  # Allow traffic from specific IP ranges
+  - action: allow
+    priority: 1000
+    match:
+      versioned_expr: SRC_IPS_V1
+      config:
+        srcIpRanges: ['YOUR_ALLOWED_IP_RANGES']
+
+  # Block known malicious IPs
+  - action: deny(403)
+    priority: 1100
+    match:
+      expr: origin.region_code == 'RU' || origin.region_code == 'CN' || origin.region_code == 'KP'
+    description: "Block traffic from high-risk regions"
+
+  # Frontend specific rate limiting
+  - action: rate_based_ban
+    priority: 850
+    match:
+      expr: request.path.matches('/api/frontend/.*')
+      config:
+        srcIpRanges: ['*']
+    rateLimitOptions:
+      rate: 200
+      rateLimitThreshold:
+        count: 200
+        intervalSec: 60
+      banDurationSec: 300
+      exceedAction: deny(429)
+
+  # Rate limiting for API endpoints
+  - action: rate_based_ban
+    priority: 900
+    match:
+      expr: request.path.matches('/api/.*')
+      config:
+        srcIpRanges: ['*']
+    rateLimitOptions:
+      rate: 100
+      rateLimitThreshold:
+        count: 100
+        intervalSec: 60
+      banDurationSec: 300
+      exceedAction: deny(429)
+
+  # Stricter rate limiting for authentication endpoints
+  - action: rate_based_ban
+    priority: 800
+    match:
+      expr: request.path.matches('.*/auth/.*') || request.path.matches('.*/login.*')
+      config:
+        srcIpRanges: ['*']
+    rateLimitOptions:
+      rate: 20
+      rateLimitThreshold:
+        count: 20
+        intervalSec: 60
+      banDurationSec: 600
+      exceedAction: deny(429)
+
+  # Block SQL injection attempts
+  - action: deny(403)
+    priority: 700
+    match:
+      expr: evaluatePreconfiguredExpr('sqli-stable')
+    description: "Block SQL injection attempts"
+
+  # Block XSS attempts
+  - action: deny(403)
+    priority: 600
+    match:
+      expr: evaluatePreconfiguredExpr('xss-stable')
+    description: "Block XSS attempts"
+
+  # Block Local File Inclusion attempts
+  - action: deny(403)
+    priority: 500
+    match:
+      expr: evaluatePreconfiguredExpr('lfi-stable')
+    description: "Block LFI attempts"
+
+  # Block Remote File Inclusion attempts
+  - action: deny(403)
+    priority: 400
+    match:
+      expr: evaluatePreconfiguredExpr('rfi-stable')
+    description: "Block RFI attempts"
+
+  # Common attack protection
+  adaptiveProtection:
+    layer7DdosDefenseConfig:
+      enable: true
+      ruleVisibility: STANDARD
+      thresholdConfig:
+        utilizationThreshold: 0.8
+
+  # Enable logging
+  logConfig:
+    enable: true
+    sampleRate: 1.0 
