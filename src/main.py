@@ -1,9 +1,28 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
+from src.routers import external_jobs
 
 app = FastAPI(title="Recruiter.AI Backend")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",  # Default Vite port
+        "http://localhost:5174",  # Alternative Vite port
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(external_jobs.router)
 
 @app.get("/health")
 async def health_check():
@@ -17,7 +36,4 @@ async def root():
         "message": "Welcome to Recruiter.AI Backend API",
         "version": "1.0.0",
         "docs_url": "/docs"
-    }
-
-# Import other routes and setup here
-# We'll add more functionality in subsequent updates 
+    } 
