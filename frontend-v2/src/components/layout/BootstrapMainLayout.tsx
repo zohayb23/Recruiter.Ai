@@ -57,6 +57,13 @@ const BootstrapMainLayout = () => {
             </Link>
           </li>
 
+          <li className={`nav-item ${isActivePath('/resume-parser') ? 'active' : ''}`}>
+            <Link className="nav-link" to="/resume-parser">
+              <i className="fas fa-fw fa-file-alt"></i>
+              <span>Resume Parser</span>
+            </Link>
+          </li>
+
           <li className={`nav-item ${isActivePath('/analytics') ? 'active' : ''}`}>
             <Link className="nav-link" to="/analytics">
               <i className="fas fa-fw fa-chart-area"></i>

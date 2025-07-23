@@ -1,12 +1,12 @@
 import axios from 'axios';
 import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
-export const API_BASE_URL = 'http://localhost:8003/api';
+export const API_BASE_URL = 'http://localhost:8804/api';
 
 // Define base API configuration
 const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8003/api',
-  timeout: 10000,
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8804/api',
+  timeout: 300000, // 5 minutes timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -21,6 +21,10 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // For file uploads, ensure proper content type
+    if (config.data instanceof FormData) {
+      config.headers['Content-Type'] = 'multipart/form-data';
     }
     return config;
   },

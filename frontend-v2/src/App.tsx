@@ -14,8 +14,9 @@ import ResumeImportPage from './components/candidates/ResumeImportPage';
 import BootstrapMainLayout from './components/layout/BootstrapMainLayout';
 import AnalyticsPage from './components/analytics/AnalyticsPage';
 import BootstrapLoginPage from './components/auth/BootstrapLoginPage';
-import ExternalJobs from './pages/ExternalJobs';
+import ExternalJobsPage from './pages/ExternalJobsPage';
 import JobDescriptionGenerator from './pages/JobDescriptionGenerator';
+import ResumeParserPage from './pages/ResumeParserPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -39,13 +40,16 @@ function App() {
               <Route path="/jobs/create" element={<BootstrapJobCreationForm />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
               <Route path="/jobs/:id/matches" element={<JobMatchingInterface />} />
-              <Route path="/jobs/external" element={<ExternalJobs />} />
+              <Route path="/jobs/external" element={<ExternalJobsPage />} />
               <Route path="/jobs/description/generate" element={<JobDescriptionGenerator />} />
               
               {/* Candidate Routes */}
               <Route path="/candidates" element={<BootstrapCandidateListingView />} />
               <Route path="/candidates/import" element={<ResumeImportPage />} />
               <Route path="/candidates/:id" element={<CandidateDetailPage />} />
+              
+              {/* Resume Parser Route */}
+              <Route path="/resume-parser" element={<ResumeParserPage />} />
               
               {/* Analytics Route */}
               <Route path="/analytics" element={<AnalyticsPage />} />

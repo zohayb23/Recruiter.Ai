@@ -1,160 +1,204 @@
 # Contributing to Recruiter.AI
 
-## Development Setup
+We love your input! We want to make contributing to Recruiter.AI as easy and transparent as possible, whether it's:
 
-1. **Clone the Repository**
+- Reporting a bug
+- Discussing the current state of the code
+- Submitting a fix
+- Proposing new features
+- Becoming a maintainer
 
-```bash
-git clone https://github.com/yourusername/Recrutier.AI.git
-cd Recrutier.AI
+## Development Process
+
+We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
+
+1. Fork the repo and create your branch from `main`.
+2. If you've added code that should be tested, add tests.
+3. If you've changed APIs, update the documentation.
+4. Ensure the test suite passes.
+5. Make sure your code lints.
+6. Issue that pull request!
+
+## Pull Request Process
+
+1. Update the README.md with details of changes to the interface, if applicable.
+2. Update the requirements.txt or package.json with any new dependencies.
+3. The PR will be merged once you have the sign-off of at least one other developer.
+
+## Code Style
+
+### Python
+- Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/)
+- Use type hints
+- Document functions and classes using docstrings
+- Maximum line length: 100 characters
+
+Example:
+```python
+from typing import List, Optional
+
+def parse_resume(file_path: str) -> Optional[dict]:
+    """
+    Parse a resume file and extract structured information.
+
+    Args:
+        file_path: Path to the resume file
+
+    Returns:
+        Dictionary containing parsed resume data or None if parsing fails
+    """
+    try:
+        # Implementation
+        pass
+    except Exception as e:
+        logger.error(f"Failed to parse resume: {e}")
+        return None
 ```
 
-2. **Create Environment Files**
+### TypeScript/React
+- Use ESLint and Prettier
+- Follow Airbnb Style Guide
+- Use functional components and hooks
+- Use TypeScript interfaces for props
 
-```bash
-# Backend (.env)
-MILVUS_URI=localhost:19530
-API_KEY=your_api_key
-JWT_SECRET=your_jwt_secret
+Example:
+```typescript
+interface ResumeViewerProps {
+  resumeId: string;
+  onClose: () => void;
+}
 
-# Frontend (.env.local)
-VITE_API_URL=http://localhost:8080/api
-```
+const ResumeViewer: React.FC<ResumeViewerProps> = ({ resumeId, onClose }) => {
+  const [resume, setResume] = useState<Resume | null>(null);
 
-3. **Setup Development Environment**
+  useEffect(() => {
+    // Implementation
+  }, [resumeId]);
 
-Backend:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm install
-```
-
-4. **Start Development Services**
-
-```bash
-# Start Milvus and required services
-docker-compose up -d
-
-# Start backend (in one terminal)
-uvicorn src.main:app --reload --port 8000
-
-# Start frontend (in another terminal)
-cd frontend
-npm run dev
-```
-
-## Branch Strategy
-
-- `main` - Production-ready code
-- `develop` - Development branch
-- `feature/*` - New features
-- `bugfix/*` - Bug fixes
-- `hotfix/*` - Production hotfixes
-
-## Development Workflow
-
-1. Create a new branch from `develop`:
-
-```bash
-git checkout develop
-git pull
-git checkout -b feature/your-feature
-```
-
-2. Make your changes and commit:
-
-```bash
-git add .
-git commit -m "feat: description of your changes"
-```
-
-3. Push and create PR:
-
-```bash
-git push origin feature/your-feature
-```
-
-4. Create PR against `develop` branch
-
-## Code Organization
-
-```
-Recrutier.AI/
-├── src/                    # Backend source code
-│   ├── api/               # API endpoints
-│   ├── models/            # Data models
-│   ├── services/          # Business logic
-│   └── utils/             # Utilities
-├── frontend/              # Frontend application
-│   ├── src/
-│   │   ├── components/    # Reusable components
-│   │   ├── pages/        # Page components
-│   │   ├── services/     # API services
-│   │   └── utils/        # Utilities
-├── kubernetes/            # K8s configurations
-└── tests/                 # Test suites
+  return (
+    // JSX
+  );
+};
 ```
 
 ## Testing
 
-Backend:
+### Backend Tests
+- Use pytest for Python tests
+- Maintain test coverage above 80%
+- Mock external services
+- Use fixtures for common test data
 
-```bash
-pytest tests/
+Example:
+```python
+import pytest
+from unittest.mock import Mock
+
+@pytest.fixture
+def mock_milvus_service():
+    return Mock()
+
+def test_resume_parser(mock_milvus_service):
+    # Test implementation
+    pass
 ```
 
-Frontend:
+### Frontend Tests
+- Use Jest and React Testing Library
+- Test component rendering and user interactions
+- Mock API calls using MSW
 
-```bash
-cd frontend
-npm test
+Example:
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { ResumeUploader } from './ResumeUploader';
+
+describe('ResumeUploader', () => {
+  it('handles file upload correctly', async () => {
+    // Test implementation
+  });
+});
 ```
 
-## Code Style
+## Commit Messages
 
-- Backend: Follow PEP 8
-- Frontend: Use ESLint and Prettier configs
-- Use TypeScript for frontend development
-- Write meaningful commit messages following Conventional Commits
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
 
-## Environment Management
+Example:
+```
+feat: Add resume parsing for RTF files
 
-- Use `.env` files for local development
-- Never commit sensitive information
-- Use Kubernetes secrets for deployment
-- Keep development and production configs separate
+- Implement RTF text extraction
+- Add unit tests for RTF parsing
+- Update documentation
 
-## Collaborative Development Tips
+Fixes #123
+```
 
-1. **Local Development**:
+## Issue and Feature Request Process
 
-   - Use feature flags for WIP features
-   - Keep changes small and focused
-   - Document API changes
+### Bug Reports
+When filing an issue, make sure to answer these questions:
 
-2. **Code Review**:
+1. What version of the software are you using?
+2. What operating system and processor architecture are you using?
+3. What did you do?
+4. What did you expect to see?
+5. What did you see instead?
 
-   - Review PRs promptly
-   - Use PR templates
-   - Write meaningful descriptions
-   - Include test coverage
+### Feature Requests
+1. Explain the problem you want to solve
+2. Explain your proposed solution
+3. Provide examples of how the feature would be used
+4. Consider the impact on existing features
 
-3. **Communication**:
+## Documentation
 
-   - Use PR comments for code-related discussion
-   - Update task status in project board
-   - Document architectural decisions
+- Update README.md for any user-facing changes
+- Update API documentation for endpoint changes
+- Add comments for complex logic
+- Update configuration examples
 
-4. **Conflict Resolution**:
-   - Rebase feature branches regularly
-   - Communicate before large refactors
-   - Use pair programming for complex features
+## Environment Setup
+
+1. Install development tools:
+```bash
+# Install Python dependencies
+pip install -r requirements-dev.txt
+
+# Install Node.js dependencies
+npm install --include=dev
+```
+
+2. Set up pre-commit hooks:
+```bash
+pre-commit install
+```
+
+3. Configure your IDE:
+- VSCode settings are provided in .vscode/
+- Use Black formatter for Python
+- Use Prettier for TypeScript/JavaScript
+
+## Branch Naming Convention
+
+- Feature branches: `feature/description`
+- Bug fix branches: `fix/description`
+- Documentation branches: `docs/description`
+- Performance improvement branches: `perf/description`
+
+Example: `feature/rtf-resume-parsing`
+
+## License
+
+By contributing, you agree that your contributions will be licensed under its MIT License.
+
+## References
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [React Documentation](https://reactjs.org/docs/getting-started.html)
+- [Milvus Documentation](https://milvus.io/docs)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)

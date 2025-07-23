@@ -1,15 +1,15 @@
-import axios from 'axios';
 import { API_BASE_URL } from './config';
+import axios from 'axios';
 
 export interface JobSearchParams {
   query?: string;
   location?: string;
   page?: number;
-  fullTime?: boolean;
-  partTime?: boolean;
+  full_time?: boolean;
+  part_time?: boolean;
   contract?: boolean;
   permanent?: boolean;
-  resultsPerPage?: number;
+  results_per_page?: number;
 }
 
 export interface Company {
@@ -21,7 +21,7 @@ export interface Location {
   area: string[];
 }
 
-export interface ExternalJob {
+export interface Job {
   id: string;
   title: string;
   description: string;
@@ -37,24 +37,27 @@ export interface ExternalJob {
 export interface JobSearchResponse {
   count: number;
   mean?: number;
-  results: ExternalJob[];
+  results: Job[];
 }
 
 export const searchExternalJobs = async (params: JobSearchParams): Promise<JobSearchResponse> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/external-jobs/search`, {
-      params: {
-        query: params.query,
-        location: params.location,
-        page: params.page || 1,
-        full_time: params.fullTime,
-        part_time: params.partTime,
-        contract: params.contract,
-        permanent: params.permanent,
-        results_per_page: params.resultsPerPage || 10
-      }
-    });
+    // Convert params to URL search params
+    const searchParams = new URLSearchParams();
+    
+    // Add basic params
+    if (params.query) searchParams.append('query', params.query);
+    if (params.location) searchParams.append('location', params.location);
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.results_per_page) searchParams.append('results_per_page', params.results_per_page.toString());
+    
+    // Add boolean params
+    if (params.full_time) searchParams.append('full_time', 'true');
+    if (params.part_time) searchParams.append('part_time', 'true');
+    if (params.contract) searchParams.append('contract', 'true');
+    if (params.permanent) searchParams.append('permanent', 'true');
 
+    const response = await axios.get(`${API_BASE_URL}/external-jobs/search?${searchParams.toString()}`);
     return response.data;
   } catch (error) {
     console.error('Error searching external jobs:', error);
@@ -62,12 +65,12 @@ export const searchExternalJobs = async (params: JobSearchParams): Promise<JobSe
   }
 };
 
-export const getExternalJobDetails = async (jobId: string): Promise<ExternalJob> => {
+export const getJobDetails = async (jobId: string): Promise<Job> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/external-jobs/${jobId}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching external job details:', error);
+    console.error('Error fetching job details:', error);
     throw error;
   }
 }; 

@@ -1,8 +1,8 @@
 version: '3.5'
 
 services:
-  etcd:
-    container_name: milvus-etcd
+  etcd-lb:
+    container_name: milvus-etcd-lb
     image: quay.io/coreos/etcd:v3.5.5
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
@@ -10,24 +10,24 @@ services:
       - ETCD_QUOTA_BACKEND_BYTES=4294967296
       - ETCD_SNAPSHOT_COUNT=50000
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
-    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd-lb:/etcd
+    command: etcd -advertise-client-urls=http://etcd-lb:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
     healthcheck:
       test: ["CMD", "etcdctl", "endpoint", "health"]
       interval: 30s
       timeout: 20s
       retries: 3
     networks:
-      - milvus-net
+      - milvus-lb-net
 
-  minio:
-    container_name: milvus-minio
+  minio-lb:
+    container_name: milvus-minio-lb
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio-lb:/minio_data
     command: minio server /minio_data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -35,40 +35,40 @@ services:
       timeout: 20s
       retries: 3
     networks:
-      - milvus-net
+      - milvus-lb-net
 
-  standalone:
-    container_name: milvus-standalone
+  standalone-lb:
+    container_name: milvus-standalone-lb
     image: milvusdb/milvus:v2.3.4
     command: ["milvus", "run", "standalone"]
     environment:
-      ETCD_ENDPOINTS: etcd:2379
-      MINIO_ADDRESS: minio:9000
+      ETCD_ENDPOINTS: etcd-lb:2379
+      MINIO_ADDRESS: minio-lb:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus-lb:/var/lib/milvus
     ports:
-      - "19530:19530"
-      - "9091:9091"
+      - "19532:19530"  # Changed from 19531 to 19532
+      - "9094:9091"    # Changed from 9093 to 9094
     depends_on:
-      - "etcd"
-      - "minio"
+      - "etcd-lb"
+      - "minio-lb"
     networks:
-      - milvus-net
+      - milvus-lb-net
 
-  attu:
-    container_name: milvus-attu
+  attu-lb:
+    container_name: milvus-attu-lb
     image: zilliz/attu:latest
     environment:
-      MILVUS_URL: standalone:19530
+      MILVUS_URL: standalone-lb:19530
     ports:
-      - "8000:3000"
+      - "8001:3000"  # Different port from primary Attu
     depends_on:
-      - "standalone"
+      - "standalone-lb"
     networks:
-      - milvus-net
+      - milvus-lb-net
 
 networks:
-  milvus-net:
-    driver: bridge
+  milvus-lb-net:
+    driver: bridge 

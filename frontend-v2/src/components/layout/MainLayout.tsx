@@ -20,6 +20,7 @@ import {
   People as PeopleIcon,
   Assessment as AssessmentIcon,
   ChevronLeft as ChevronLeftIcon,
+  Description as DescriptionIcon,
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -34,6 +35,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { text: 'Jobs', path: '/jobs', icon: <WorkIcon /> },
   { text: 'Candidates', path: '/candidates', icon: <PeopleIcon /> },
+  { text: 'Resume Parser', path: '/resume-parser', icon: <DescriptionIcon /> },
   { text: 'Analytics', path: '/analytics', icon: <AssessmentIcon /> },
 ];
 

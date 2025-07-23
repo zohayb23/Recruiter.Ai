@@ -1,163 +1,276 @@
-# Recrutier.AI
+# Recruiter.AI - AI-Powered Recruitment Platform
 
-An advanced resume search and matching system that combines full-text and semantic search capabilities.
+Recruiter.AI is a modern recruitment platform that leverages artificial intelligence to streamline the hiring process. The platform includes resume parsing, job matching, external job search, and vector-based candidate search capabilities.
 
 ## Features
 
-- **Dual Search Engine**:
+### Core Features
+- 🤖 AI-powered resume parsing with structured data extraction
+- 🔍 External job search integration with Adzuna API
+- 📊 Vector-based candidate search using Milvus
+- 💼 Job requisition management
+- 👥 Candidate relationship management
+- 🔄 High availability with load balancer setup
 
-  - Full-text search using BM25 algorithm
-  - Semantic search using dense embeddings
-  - Hybrid search capabilities
+### Technical Stack
+- **Backend**: FastAPI, Python 3.12
+- **Frontend**: React, TypeScript, Bootstrap
+- **Vector Store**: Milvus 2.3.4
+- **ML/AI**: 
+  - Sentence Transformers
+  - spaCy
+  - OpenAI API
+- **Database**: PostgreSQL
+- **Infrastructure**: Docker, Docker Compose
 
-- **Multiple Format Support**:
+## Getting Started
 
-  - PDF resumes
-  - DOCX resumes
-  - CSV resume datasets
+### Prerequisites
+- Python 3.12+
+- Node.js 18+
+- Docker and Docker Compose
+- Git
 
-- **Advanced Search Capabilities**:
-  - Boolean operations (AND, OR)
-  - Semantic similarity matching
-  - Role-based search
-  - Skill-based search
-  - Education matching
-  - Experience level correlation
-
-## Technical Stack
-
-- Python 3.8+
-- Milvus Vector Database
-- Sentence Transformers
-- PyMilvus
-- PDFPlumber
-- Python-docx
-
-## Installation
-
-### Local Development
+### Installation
 
 1. Clone the repository:
-
 ```bash
-git clone https://github.com/yourusername/Recrutier.AI.git
-cd Recrutier.AI
+git clone https://github.com/yourusername/Recruiter.AI.git
+cd Recruiter.AI
 ```
 
-2. Create and activate virtual environment:
-
+2. Set up Python virtual environment:
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-3. Install dependencies:
-
-```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Start Milvus:
-
+3. Install frontend dependencies:
 ```bash
-docker-compose -f docker-compose-milvus.yml up -d
+cd frontend-v2
+npm install
 ```
 
-### Cloud Deployment
-
-For production deployment on Google Kubernetes Engine (GKE), please refer to our [GKE Deployment Guide](docs/gke-milvus-deployment.md).
-
-## Usage
-
-### 1. Process Resumes
-
-Place your resumes in the appropriate folders:
-
-- PDFs: `pdf_resumes/`
-- DOCX: `docx_resumes/`
-- CSV: `csv_resumes/`
-
-Run the embedding processor:
-
+4. Start Milvus instances (Primary and Load Balancer):
 ```bash
-python src/embedding_processor.py --csv csv_resumes --pdf_dir pdf_resumes --docx_dir docx_resumes
+# Start primary Milvus instance
+docker-compose up -d
+
+# Start load balancer Milvus instance
+docker-compose -f docker-compose.loadbalancer.yml up -d
 ```
 
-### 2. Search Resumes
-
-#### Full Text Search
-
-```
-python
-from full_text_search import search_resumes
-
-results = search_resumes("Java Developer", top_k=5)
-```
-
-#### Dense Search
-
-```python
-from dense_search import dense_search
-
-results = dense_search("Java Developer", top_k=5)
-```
-
-### 3. Run Tests
-
+5. Start the backend server:
 ```bash
-# Full text search tests
-python test_full_text_edge_cases.py
-
-# Dense search tests
-python test_dense_edge_cases.py
+# Set PYTHONPATH and start FastAPI server
+PYTHONPATH=/path/to/Recruiter.AI python -m uvicorn src.main:app --host 0.0.0.0 --port 8804 --reload
 ```
 
-## Search Capabilities
+6. Start the frontend development server:
+```bash
+cd frontend-v2
+npm run dev
+```
 
-### Full Text Search
+### Accessing the Services
 
-- Boolean operations (AND, OR)
-- Special character handling
-- Wildcard pattern matching
-- Whitespace normalization
-- Score range: 1-14
+#### Frontend Application
+- Main application: http://localhost:5173
 
-### Dense Search
+#### Backend API
+- FastAPI server: http://localhost:8804
+- API documentation: http://localhost:8804/docs
 
-- Semantic understanding
-- Concept matching
-- Role similarity
-- Education matching
-- Experience level correlation
-- Score range: 0.7-1.7
+#### Milvus Vector Stores
 
-## Performance
+Primary Instance:
+- Milvus server: localhost:19530
+- Attu UI: http://localhost:8000
+  - Connect using:
+    - Milvus Address: localhost:19530
+    - Database: default
 
-- **Full Text Search**:
+Load Balancer Instance:
+- Milvus server: localhost:19532
+- Attu UI: http://localhost:8001
+  - Connect using:
+    - Milvus Address: localhost:19532
+    - Database: default
 
-  - Execution time: ~11 seconds
-  - Best for exact matches
-  - Better snippet generation
+## Architecture
 
-- **Dense Search**:
-  - Execution time: ~0.5 seconds
-  - Best for semantic matching
-  - Better context understanding
+### Backend Components
+
+1. Resume Parser Service
+- Supports PDF, DOCX, TXT, and RTF files
+- Extracts structured information:
+  - Contact details
+  - Work experience
+  - Education
+  - Skills (with proficiency levels)
+  - Projects
+- Stores parsed data in Milvus for vector search
+
+2. External Job Search
+- Integration with Adzuna API
+- Supports filters:
+  - Keywords
+  - Location
+  - Employment type (full-time, part-time, contract, permanent)
+  - Results pagination
+
+3. Vector Store Service
+- Dual Milvus setup for high availability
+- Vector embeddings using Sentence Transformers
+- Collections:
+  - resumes: Primary collection
+  - resumes_lb: Load balancer collection
+  - document_store: For document embeddings
+  - jobs: For job embeddings
+  - skills: For skill embeddings
+
+### Frontend Components
+
+1. Resume Management
+- Drag-and-drop resume upload
+- Structured resume viewer
+- Resume parsing status tracking
+
+2. Job Search Interface
+- External job search with filters
+- Job details view
+- Apply now functionality
+
+3. Admin Dashboard
+- Resume analytics
+- Job posting management
+- Candidate tracking
+
+## API Documentation
+
+### Resume Parser Endpoints
+
+```typescript
+POST /api/resume-parser/parse
+- Accepts multipart/form-data with file
+- Returns parsed resume data
+
+GET /api/resume-parser/stored-resumes
+- Returns list of stored resumes
+```
+
+### External Jobs Endpoints
+
+```typescript
+GET /api/external-jobs/search
+- Query parameters:
+  - query: string
+  - location: string
+  - page: number
+  - full_time: boolean
+  - part_time: boolean
+  - contract: boolean
+  - permanent: boolean
+  - results_per_page: number
+
+GET /api/external-jobs/{job_id}
+- Returns detailed job information
+```
+
+## Docker Configuration
+
+### Primary Milvus Instance (docker-compose.yml)
+```yaml
+services:
+  etcd:
+    # Etcd configuration
+  minio:
+    # MinIO configuration
+  standalone:
+    # Milvus standalone configuration
+  attu:
+    # Attu UI configuration
+```
+
+### Load Balancer Instance (docker-compose.loadbalancer.yml)
+```yaml
+services:
+  etcd-lb:
+    # Etcd configuration
+  minio-lb:
+    # MinIO configuration
+  standalone-lb:
+    # Milvus standalone configuration
+  attu-lb:
+    # Attu UI configuration
+```
+
+## Development Guidelines
+
+1. Code Style
+- Python: Follow PEP 8
+- TypeScript: Use ESLint and Prettier
+- Use type hints and interfaces
+
+2. Git Workflow
+- Feature branches: `feature/feature-name`
+- Bug fixes: `fix/bug-name`
+- Pull requests for all changes
+
+3. Testing
+- Write unit tests for new features
+- Run tests before committing
+- Maintain test coverage
+
+## Troubleshooting
+
+### Common Issues
+
+1. Milvus Connection Issues
+```bash
+# Check if Milvus containers are running
+docker ps
+
+# Check Milvus logs
+docker logs milvus-standalone
+docker logs milvus-standalone-lb
+```
+
+2. Resume Parser Issues
+```bash
+# Check upload directory permissions
+ls -la uploads/resumes
+
+# Check FastAPI logs
+docker logs fastapi-server
+```
+
+3. Frontend Issues
+```bash
+# Clear npm cache
+npm clean-cache
+
+# Rebuild node modules
+rm -rf node_modules
+npm install
+```
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 
-- Milvus for vector database capabilities
-- Sentence Transformers for semantic search
-- All contributors and users of the project
+- [Milvus](https://milvus.io/) for vector database
+- [FastAPI](https://fastapi.tiangolo.com/) for backend framework
+- [React](https://reactjs.org/) for frontend framework
+- [Adzuna](https://www.adzuna.com/) for job search API
