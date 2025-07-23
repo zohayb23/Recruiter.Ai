@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 from pathlib import Path
 from datetime import datetime
+import re
 from fastapi import UploadFile, HTTPException
 from .document_processor import DocumentProcessor
 from .entity_extractor import EntityExtractor
@@ -25,6 +26,36 @@ class ResumeParserService:
         self.upload_dir = Path("uploads/resumes")
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Resume upload directory: {self.upload_dir}")
+
+    def sanitize_filename(self, filename: str) -> str:
+        """
+        Sanitize filename to be compatible with all operating systems.
+        
+        Args:
+            filename: Original filename
+            
+        Returns:
+            Sanitized filename
+        """
+        # Get the file extension
+        name, ext = os.path.splitext(filename)
+        
+        # Replace problematic characters with safe alternatives
+        # Replace colons with dashes
+        name = name.replace(':', '-')
+        # Replace other unsafe characters
+        name = re.sub(r'[<>:"/\\|?*]', '-', name)
+        # Remove control characters
+        name = "".join(char for char in name if ord(char) >= 32)
+        # Trim spaces and dots from ends
+        name = name.strip('. ')
+        
+        # Ensure the filename isn't too long (max 255 chars including extension)
+        max_length = 255 - len(ext)
+        if len(name) > max_length:
+            name = name[:max_length]
+            
+        return f"{name}{ext}"
 
     async def parse_resume(self, file: UploadFile) -> ResumeParseResponse:
         """
@@ -139,10 +170,12 @@ class ResumeParserService:
     async def save_resume_file(self, file_content: bytes, filename: str) -> str:
         """Save uploaded file to disk with a unique name"""
         try:
-            # Generate unique filename
-            base_name = Path(filename).stem
-            extension = Path(filename).suffix
+            # Sanitize the filename
+            sanitized_name = self.sanitize_filename(filename)
+            base_name = Path(sanitized_name).stem
+            extension = Path(sanitized_name).suffix
             counter = 1
+            
             while True:
                 unique_name = f"{base_name}{'_' + str(counter) if counter > 1 else ''}{extension}"
                 file_path = self.upload_dir / unique_name
@@ -151,7 +184,7 @@ class ResumeParserService:
                 counter += 1
 
             # Save file
-            logger.info(f"Saving resume file: {filename}")
+            logger.info(f"Saving resume file: {filename} as {unique_name}")
             with open(file_path, 'wb') as f:
                 f.write(file_content)
             
