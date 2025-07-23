@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
-from .routers import external_jobs, resume_parser
+from .routers import external_jobs, resume_parser, interview, assessment
 
 app = FastAPI(title="Recruiter.AI Backend")
 
@@ -26,6 +26,8 @@ app.add_middleware(
 # Include routers
 app.include_router(external_jobs.router)
 app.include_router(resume_parser.router)
+app.include_router(interview.router)
+app.include_router(assessment.router)
 
 @app.get("/health")
 async def health_check():
