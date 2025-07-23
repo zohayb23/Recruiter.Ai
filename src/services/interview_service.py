@@ -1,189 +1,167 @@
-from typing import Dict, List, Optional
-from sqlalchemy.orm import Session
-import openai
 from datetime import datetime
-import json
-import os
-
-from ..database.models import Job, Candidate, InterviewQuestions
-from ..models.interview import QuestionRequest, QuestionType, DifficultyLevel
+from typing import List, Optional
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
+from ..models.interview import (
+    Interview, InterviewFeedback,
+    InterviewCreate, InterviewUpdate,
+    InterviewFeedbackCreate, InterviewFeedbackUpdate,
+    InterviewStatus
+)
 
 class InterviewService:
-    def __init__(self):
-        """Initialize the interview service with OpenAI client"""
-        self.openai_client = openai.OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
+    def __init__(self, db: Session):
+        self.db = db
 
-    def generate_questions(
+    def create_interview(self, interview_data: InterviewCreate) -> Interview:
+        """Create a new interview"""
+        interview = Interview(**interview_data.model_dump())
+        self.db.add(interview)
+        self.db.commit()
+        self.db.refresh(interview)
+        return interview
+
+    def get_interview(self, interview_id: int) -> Optional[Interview]:
+        """Get interview by ID"""
+        return self.db.query(Interview).filter(Interview.id == interview_id).first()
+
+    def get_interviews(
         self,
-        db: Session,
-        request: QuestionRequest
-    ) -> Dict:
-        """Generate interview questions based on job and candidate profile"""
-        
-        # Get job and candidate details if IDs provided
-        job = None
-        candidate = None
-        
-        if request.job_id:
-            job = db.query(Job).filter(Job.id == request.job_id).first()
-        if request.candidate_id:
-            candidate = db.query(Candidate).filter(Candidate.id == request.candidate_id).first()
+        candidate_id: Optional[int] = None,
+        job_id: Optional[int] = None,
+        interviewer_id: Optional[int] = None,
+        status: Optional[InterviewStatus] = None,
+        from_date: Optional[datetime] = None,
+        to_date: Optional[datetime] = None
+    ) -> List[Interview]:
+        """Get interviews with optional filters"""
+        query = self.db.query(Interview)
 
-        # Prepare the prompt for AI
-        prompt = self._build_prompt(request, job, candidate)
+        if candidate_id:
+            query = query.filter(Interview.candidate_id == candidate_id)
+        if job_id:
+            query = query.filter(Interview.job_id == job_id)
+        if interviewer_id:
+            query = query.filter(Interview.interviewer_id == interviewer_id)
+        if status:
+            query = query.filter(Interview.status == status)
+        if from_date and to_date:
+            query = query.filter(
+                and_(
+                    Interview.scheduled_time >= from_date,
+                    Interview.scheduled_time <= to_date
+                )
+            )
 
-        # Generate questions using OpenAI
-        response = self.openai_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {
-                    "role": "system",
-                    "content": """You are an expert technical interviewer and recruiter.
-                    Generate challenging but fair interview questions that assess both
-                    technical skills and soft skills. Include example good/bad answers
-                    and evaluation criteria for each question."""
-                },
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"}
-        )
+        return query.order_by(Interview.scheduled_time.desc()).all()
 
-        # Parse the AI response
-        content = json.loads(response.choices[0].message.content)
-        
-        # Store in database
-        db_questions = InterviewQuestions(
-            job_id=request.job_id,
-            candidate_id=request.candidate_id,
-            question_type=request.question_type,
-            difficulty=request.difficulty,
-            questions=content,
-            created_at=datetime.utcnow()
-        )
-        
-        db.add(db_questions)
-        db.commit()
-        db.refresh(db_questions)
-        
-        return {
-            "id": db_questions.id,
-            "questions": content
-        }
+    def update_interview(self, interview_id: int, interview_data: InterviewUpdate) -> Optional[Interview]:
+        """Update interview details"""
+        interview = self.get_interview(interview_id)
+        if not interview:
+            return None
 
-    def _build_prompt(
-        self,
-        request: QuestionRequest,
-        job: Optional[Job] = None,
-        candidate: Optional[Candidate] = None
-    ) -> str:
-        """Build the prompt for question generation"""
-        
-        # Base prompt structure
-        prompt = f"""
-        Generate {request.num_questions} interview questions for a {request.role_title} position.
-        
-        Question Type: {request.question_type.value}
-        Difficulty Level: {request.difficulty.value}
-        Focus Areas: {', '.join(request.focus_areas)}
-        
-        For each question, provide:
-        1. The question text
-        2. Expected answer points
-        3. Evaluation criteria
-        4. Example good answer
-        5. Example bad answer
-        6. Follow-up questions
-        
-        Additional Requirements:
-        - Questions should be {request.difficulty.value} difficulty
-        - Include a mix of theoretical and practical questions
-        - Focus on real-world scenarios
-        - Include questions that assess both technical knowledge and problem-solving
-        """
+        update_data = interview_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(interview, field, value)
 
-        # Add job-specific context if available
-        if job:
-            prompt += f"""
-            Job Context:
-            - Required Skills: {', '.join(job.required_skills)}
-            - Experience Level: {job.experience_level}
-            - Job Description: {job.description}
-            """
+        self.db.commit()
+        self.db.refresh(interview)
+        return interview
 
-        # Add candidate-specific context if available
-        if candidate:
-            prompt += f"""
-            Candidate Context:
-            - Current Title: {candidate.current_title}
-            - Years of Experience: {candidate.years_of_experience}
-            - Skills: {', '.join(candidate.skills or [])}
-            """
+    def delete_interview(self, interview_id: int) -> bool:
+        """Delete an interview"""
+        interview = self.get_interview(interview_id)
+        if not interview:
+            return False
 
-        # Add format instructions
-        prompt += """
-        Format the response as a JSON object with this structure:
-        {
-            "questions": [
-                {
-                    "question": "Question text",
-                    "type": "question type",
-                    "difficulty": "difficulty level",
-                    "expected_answer": ["point 1", "point 2", ...],
-                    "evaluation_criteria": ["criterion 1", "criterion 2", ...],
-                    "good_answer_example": "example of a good answer",
-                    "bad_answer_example": "example of a bad answer",
-                    "follow_up_questions": ["question 1", "question 2", ...]
-                }
-            ]
-        }
-        """
+        self.db.delete(interview)
+        self.db.commit()
+        return True
 
-        return prompt
+    def create_feedback(self, feedback_data: InterviewFeedbackCreate) -> InterviewFeedback:
+        """Create interview feedback"""
+        feedback = InterviewFeedback(**feedback_data.model_dump())
+        self.db.add(feedback)
+        self.db.commit()
+        self.db.refresh(feedback)
+        return feedback
 
-    def get_questions_by_id(
-        self,
-        db: Session,
-        question_set_id: str
-    ) -> Dict:
-        """Retrieve a specific set of interview questions"""
-        questions = (
-            db.query(InterviewQuestions)
-            .filter(InterviewQuestions.id == question_set_id)
-            .first()
-        )
-        
-        if not questions:
-            raise ValueError("Question set not found")
-            
-        return {
-            "id": questions.id,
-            "questions": questions.questions
-        }
+    def get_feedback(self, feedback_id: int) -> Optional[InterviewFeedback]:
+        """Get feedback by ID"""
+        return self.db.query(InterviewFeedback).filter(InterviewFeedback.id == feedback_id).first()
 
-    def generate_feedback_form(
-        self,
-        db: Session,
-        question_set_id: str
-    ) -> Dict:
-        """Generate an interview feedback form for a question set"""
-        questions = self.get_questions_by_id(db, question_set_id)
-        
-        feedback_form = {
-            "question_set_id": question_set_id,
-            "sections": []
-        }
-        
-        for question in questions["questions"]["questions"]:
-            section = {
-                "question": question["question"],
-                "evaluation_criteria": question["evaluation_criteria"],
-                "score_options": [1, 2, 3, 4, 5],
-                "notes": "",
-                "red_flags": [],
-                "strengths": []
-            }
-            feedback_form["sections"].append(section)
-            
-        return feedback_form 
+    def get_interview_feedback(self, interview_id: int) -> List[InterviewFeedback]:
+        """Get all feedback for an interview"""
+        return self.db.query(InterviewFeedback).filter(InterviewFeedback.interview_id == interview_id).all()
+
+    def update_feedback(self, feedback_id: int, feedback_data: InterviewFeedbackUpdate) -> Optional[InterviewFeedback]:
+        """Update interview feedback"""
+        feedback = self.get_feedback(feedback_id)
+        if not feedback:
+            return None
+
+        update_data = feedback_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(feedback, field, value)
+
+        self.db.commit()
+        self.db.refresh(feedback)
+        return feedback
+
+    def delete_feedback(self, feedback_id: int) -> bool:
+        """Delete interview feedback"""
+        feedback = self.get_feedback(feedback_id)
+        if not feedback:
+            return False
+
+        self.db.delete(feedback)
+        self.db.commit()
+        return True
+
+    def get_upcoming_interviews(self, days: int = 7) -> List[Interview]:
+        """Get upcoming interviews within specified days"""
+        now = datetime.utcnow()
+        return self.db.query(Interview).filter(
+            and_(
+                Interview.scheduled_time >= now,
+                Interview.status == InterviewStatus.SCHEDULED
+            )
+        ).order_by(Interview.scheduled_time).all()
+
+    def get_interviewer_schedule(self, interviewer_id: int, from_date: datetime, to_date: datetime) -> List[Interview]:
+        """Get interviewer's schedule for a date range"""
+        return self.db.query(Interview).filter(
+            and_(
+                Interview.interviewer_id == interviewer_id,
+                Interview.scheduled_time >= from_date,
+                Interview.scheduled_time <= to_date
+            )
+        ).order_by(Interview.scheduled_time).all()
+
+    def cancel_interview(self, interview_id: int, cancellation_reason: Optional[str] = None) -> Optional[Interview]:
+        """Cancel an interview"""
+        interview = self.get_interview(interview_id)
+        if not interview:
+            return None
+
+        interview.status = InterviewStatus.CANCELLED
+        if cancellation_reason:
+            interview.notes = f"Cancelled: {cancellation_reason}"
+
+        self.db.commit()
+        self.db.refresh(interview)
+        return interview
+
+    def reschedule_interview(self, interview_id: int, new_time: datetime) -> Optional[Interview]:
+        """Reschedule an interview"""
+        interview = self.get_interview(interview_id)
+        if not interview:
+            return None
+
+        interview.scheduled_time = new_time
+        interview.status = InterviewStatus.RESCHEDULED
+
+        self.db.commit()
+        self.db.refresh(interview)
+        return interview 
