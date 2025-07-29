@@ -1,4 +1,4 @@
-import apiClient from './config';
+import { api } from './config';
 import type { Candidate } from '../../types/api';
 
 interface CandidateFilters {
@@ -19,7 +19,7 @@ interface CandidateResponse {
 
 export const searchCandidates = async (filters: CandidateFilters): Promise<CandidateResponse> => {
   try {
-    const response = await apiClient.get('/candidates/search', { params: filters });
+    const response = await api.get('/candidates/search', { params: filters });
     return response.data;
   } catch (error) {
     console.error('Error searching candidates:', error);
@@ -29,7 +29,7 @@ export const searchCandidates = async (filters: CandidateFilters): Promise<Candi
 
 export const getCandidateById = async (id: string): Promise<Candidate> => {
   try {
-    const response = await apiClient.get(`/candidates/${id}`);
+    const response = await api.get(`/candidates/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching candidate:', error);
@@ -39,7 +39,7 @@ export const getCandidateById = async (id: string): Promise<Candidate> => {
 
 export const createCandidate = async (candidate: Partial<Candidate>): Promise<Candidate> => {
   try {
-    const response = await apiClient.post('/candidates', candidate);
+    const response = await api.post('/candidates', candidate);
     return response.data;
   } catch (error) {
     console.error('Error creating candidate:', error);
@@ -49,7 +49,7 @@ export const createCandidate = async (candidate: Partial<Candidate>): Promise<Ca
 
 export const updateCandidate = async (id: string, updates: Partial<Candidate>): Promise<Candidate> => {
   try {
-    const response = await apiClient.put(`/candidates/${id}`, updates);
+    const response = await api.put(`/candidates/${id}`, updates);
     return response.data;
   } catch (error) {
     console.error('Error updating candidate:', error);
@@ -59,7 +59,7 @@ export const updateCandidate = async (id: string, updates: Partial<Candidate>): 
 
 export const deleteCandidate = async (id: string): Promise<void> => {
   try {
-    await apiClient.delete(`/candidates/${id}`);
+    await api.delete(`/candidates/${id}`);
   } catch (error) {
     console.error('Error deleting candidate:', error);
     throw error;

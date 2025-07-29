@@ -1,11 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 
 // Components
 import BootstrapJobListingView from './components/jobs/BootstrapJobListingView';
-import BootstrapJobCreationForm from './components/jobs/BootstrapJobCreationForm';
 import JobDetailPage from './components/jobs/JobDetailPage';
 import JobMatchingInterface from './components/jobs/JobMatchingInterface';
 import BootstrapCandidateListingView from './components/candidates/BootstrapCandidateListingView';
@@ -17,6 +16,7 @@ import BootstrapLoginPage from './components/auth/BootstrapLoginPage';
 import ExternalJobsPage from './pages/ExternalJobsPage';
 import JobDescriptionGenerator from './pages/JobDescriptionGenerator';
 import ResumeParserPage from './pages/ResumeParserPage';
+import { BootstrapJobCreationForm } from './components/jobs/BootstrapJobCreationForm';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -35,10 +35,11 @@ function App() {
         <AuthProvider>
           <Routes>
             <Route element={<BootstrapMainLayout />}>
-              {/* All routes are now public */}
+              {/* Job Routes */}
               <Route path="/jobs" element={<BootstrapJobListingView />} />
               <Route path="/jobs/create" element={<BootstrapJobCreationForm />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
+              <Route path="/jobs/:id/edit" element={<BootstrapJobCreationForm />} />
               <Route path="/jobs/:id/matches" element={<JobMatchingInterface />} />
               <Route path="/jobs/external" element={<ExternalJobsPage />} />
               <Route path="/jobs/description/generate" element={<JobDescriptionGenerator />} />

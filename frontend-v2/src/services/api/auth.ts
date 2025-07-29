@@ -1,24 +1,20 @@
-import type { ApiResponse, LoginRequest, LoginResponse, User } from '../../types/api';
-import apiClient from './config';
-import { mockAuthApi } from './mockApi';
+import { api } from './config';
 
-// Use mock API in development
-const isDevelopment = import.meta.env.MODE === 'development';
-const api = isDevelopment ? mockAuthApi : {
-  login: async (credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> => {
-    const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials);
-    return response.data;
-  },
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
 
-  getCurrentUser: async (): Promise<ApiResponse<User>> => {
-    const response = await apiClient.get<ApiResponse<User>>('/auth/me');
-    return response.data;
-  },
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+}
 
-  logout: async (): Promise<void> => {
-    await apiClient.post('/auth/logout');
-    localStorage.removeItem('token');
-  },
+export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  const response = await api.post('/auth/login', credentials);
+  return response.data;
 };
 
-export const authApi = api; 
+export const logout = async (): Promise<void> => {
+  await api.post('/auth/logout');
+}; 

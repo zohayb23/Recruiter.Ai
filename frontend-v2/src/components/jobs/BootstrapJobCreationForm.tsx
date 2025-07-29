@@ -1,408 +1,353 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { generateJobDescription, createJobDescription, type JobDescription } from '../../services/api/jobDescriptions';
 
 interface JobFormData {
   title: string;
   company: string;
   description: string;
-  requirements: string[];
   location: string;
-  isRemote: boolean;
-  employmentType: string;
-  experienceLevel: string;
   department: string;
-  salary: {
-    min: number;
-    max: number;
-    currency: string;
-  };
-  status: 'DRAFT' | 'PUBLISHED';
+  employment_type: string;
+  experience_level: string;
+  remote_work: boolean;
+  currency: string;
+  min_salary: string;
+  max_salary: string;
+  requirements: string[];
 }
 
-interface FormErrors {
-  title?: string;
-  company?: string;
-  description?: string;
-  location?: string;
-  employmentType?: string;
-  experienceLevel?: string;
-  department?: string;
-  salary?: string;
-}
+export const BootstrapJobCreationForm: React.FC = () => {
+  const [formData, setFormData] = useState<JobFormData>({
+    title: '',
+    company: '',
+    description: '',
+    location: '',
+    department: '',
+    employment_type: '',
+    experience_level: '',
+    remote_work: false,
+    currency: 'USD ($)',
+    min_salary: '',
+    max_salary: '',
+    requirements: []
+  });
+  const [newRequirement, setNewRequirement] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const initialFormData: JobFormData = {
-  title: '',
-  company: '',
-  description: '',
-  requirements: [],
-  location: '',
-  isRemote: false,
-  employmentType: '',
-  experienceLevel: '',
-  department: '',
-  salary: {
-    min: 0,
-    max: 0,
-    currency: 'USD'
-  },
-  status: 'DRAFT'
-};
-
-const BootstrapJobCreationForm: React.FC = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState<JobFormData>(initialFormData);
-  const [requirement, setRequirement] = useState('');
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const validateForm = () => {
-    const newErrors: FormErrors = {};
-    
-    if (!formData.title.trim()) newErrors.title = 'Job title is required';
-    if (!formData.company.trim()) newErrors.company = 'Company name is required';
-    if (!formData.description.trim()) newErrors.description = 'Job description is required';
-    if (!formData.location.trim()) newErrors.location = 'Location is required';
-    if (!formData.employmentType) newErrors.employmentType = 'Employment type is required';
-    if (!formData.experienceLevel) newErrors.experienceLevel = 'Experience level is required';
-    if (!formData.department.trim()) newErrors.department = 'Department is required';
-    if (formData.salary.min <= 0) newErrors.salary = 'Minimum salary is required';
-    if (formData.salary.max <= 0 || formData.salary.max <= formData.salary.min) {
-      newErrors.salary = 'Maximum salary must be greater than minimum salary';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent, status: 'DRAFT' | 'PUBLISHED' = 'PUBLISHED') => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      setIsSubmitting(true);
-      try {
-        // TODO: Integrate with backend API
-        const submitData = {
-          ...formData,
-          status
-        };
-        console.log('Form submitted:', submitData);
-        navigate('/jobs');
-      } catch (error) {
-        console.error('Error creating job:', error);
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
-  };
-
-  const handleRequirementAdd = () => {
-    if (requirement.trim()) {
-      setFormData({
-        ...formData,
-        requirements: [...formData.requirements, requirement.trim()],
+  const handleGenerateJobDescription = async () => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+      
+      const response = await generateJobDescription({
+        title: formData.title,
+        department: formData.department,
+        experience_level: formData.experience_level,
+        required_skills: formData.requirements
       });
-      setRequirement('');
+
+      setFormData(prev => ({
+        ...prev,
+        title: response.title || prev.title,
+        description: response.overview || prev.description,
+        department: response.department || prev.department,
+        experience_level: response.experience_level || prev.experience_level,
+        requirements: [
+          ...(response.responsibilities?.map((r: { description: string }) => r.description) || []),
+          ...(response.qualifications?.map((q: { description: string }) => q.description) || [])
+        ]
+      }));
+    } catch (error: any) {
+      console.error('Error generating job description:', error);
+      setError(error.response?.data?.message || 'Error generating job description');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const handleRequirementDelete = (indexToDelete: number) => {
-    setFormData({
-      ...formData,
-      requirements: formData.requirements.filter((_, index) => index !== indexToDelete),
-    });
+  const handleAddRequirement = () => {
+    if (newRequirement.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        requirements: [...prev.requirements, newRequirement.trim()]
+      }));
+      setNewRequirement('');
+    }
+  };
+
+  const handleSaveAsDraft = async () => {
+    try {
+      const jobData: JobDescription = {
+        title: formData.title,
+        department: formData.department,
+        location: formData.location,
+        employment_type: formData.employment_type,
+        experience_level: formData.experience_level,
+        overview: formData.description,
+        responsibilities: formData.requirements.map(r => ({ description: r, is_required: true })),
+        qualifications: [],
+        required_skills: [],
+        preferred_skills: [],
+        benefits: [],
+        company_description: '',
+        culture_values: '',
+        diversity_statement: '',
+        status: 'draft'
+      };
+
+      await createJobDescription(jobData);
+      // TODO: Show success message and redirect to job listings
+    } catch (error: any) {
+      console.error('Error saving job description:', error);
+      setError(error.response?.data?.message || 'Error saving job description');
+    }
   };
 
   return (
-    <>
-      {/* Page Heading */}
-      <div className="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 className="h3 mb-0 text-gray-800">Create New Job Posting</h1>
-        <div>
-          <button 
-            className="btn btn-secondary mr-2"
-            onClick={(e) => handleSubmit(e, 'DRAFT')}
-            disabled={isSubmitting}
-          >
-            <i className="fas fa-save fa-sm text-white-50 mr-2"></i>
-            Save as Draft
-          </button>
-          <button 
-            className="btn btn-primary"
-            onClick={(e) => handleSubmit(e, 'PUBLISHED')}
-            disabled={isSubmitting}
-          >
-            <i className="fas fa-paper-plane fa-sm text-white-50 mr-2"></i>
-            Publish Job
-          </button>
-        </div>
-      </div>
-
-      {/* Job Creation Form */}
+    <div className="container-fluid">
       <div className="card shadow mb-4">
         <div className="card-header py-3 d-flex justify-content-between align-items-center">
-          <h6 className="m-0 font-weight-bold text-primary">Job Details</h6>
-          <button 
-            type="button" 
-            className="btn btn-outline-secondary btn-sm"
-            onClick={() => navigate('/jobs')}
-          >
-            <i className="fas fa-arrow-left fa-sm mr-2"></i>
-            Back to Jobs
-          </button>
+          <h6 className="m-0 font-weight-bold text-primary">Create New Job Posting</h6>
+          <div>
+            <button 
+              className="btn btn-primary me-2"
+              onClick={handleGenerateJobDescription}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-magic me-2"></i>
+                  Generate Job Description
+                </>
+              )}
+            </button>
+            <button 
+              className="btn btn-secondary me-2"
+              onClick={handleSaveAsDraft}
+            >
+              Save as Draft
+            </button>
+            <button className="btn btn-primary">Publish Job</button>
+          </div>
         </div>
         <div className="card-body">
-          <form onSubmit={(e) => handleSubmit(e)}>
-            <div className="row">
-              <div className="col-md-8">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Job Title <span className="text-danger">*</span></label>
+          {error && (
+            <div className="alert alert-danger mb-4" role="alert">
+              {error}
+            </div>
+          )}
+          <form>
+            <div className="mb-4">
+              <h5>Job Details</h5>
+              <div className="row">
+                <div className="col-md-6 mb-3">
+                  <label htmlFor="jobTitle" className="form-label">Job Title *</label>
                   <input
                     type="text"
-                    className={`form-control ${errors.title ? 'is-invalid' : ''}`}
+                    className="form-control"
+                    id="jobTitle"
                     placeholder="e.g., Senior Software Engineer"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    required
                   />
-                  {errors.title && (
-                    <div className="invalid-feedback">{errors.title}</div>
-                  )}
                 </div>
-              </div>
-
-              <div className="col-md-4">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Company <span className="text-danger">*</span></label>
+                <div className="col-md-6 mb-3">
+                  <label htmlFor="company" className="form-label">Company *</label>
                   <input
                     type="text"
-                    className={`form-control ${errors.company ? 'is-invalid' : ''}`}
+                    className="form-control"
+                    id="company"
                     placeholder="Enter company name"
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    required
                   />
-                  {errors.company && (
-                    <div className="invalid-feedback">{errors.company}</div>
-                  )}
                 </div>
               </div>
 
-              <div className="col-12">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Job Description <span className="text-danger">*</span></label>
-                  <textarea
-                    className={`form-control ${errors.description ? 'is-invalid' : ''}`}
-                    rows={8}
-                    placeholder="Enter detailed job description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                  {errors.description && (
-                    <div className="invalid-feedback">{errors.description}</div>
-                  )}
-                </div>
+              <div className="mb-3">
+                <label htmlFor="jobDescription" className="form-label">Job Description *</label>
+                <textarea
+                  className="form-control"
+                  id="jobDescription"
+                  rows={5}
+                  placeholder="Enter detailed job description or use the 'Generate Job Description' button above"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
+                ></textarea>
               </div>
 
-              <div className="col-12">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Requirements</label>
-                  <div className="input-group mb-3">
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Add a requirement"
-                      value={requirement}
-                      onChange={(e) => setRequirement(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleRequirementAdd())}
-                    />
-                    <div className="input-group-append">
-                      <button
-                        className="btn btn-outline-primary"
-                        type="button"
-                        onClick={handleRequirementAdd}
-                      >
-                        <i className="fas fa-plus fa-sm mr-1"></i> Add
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mb-3">
-                    {formData.requirements.map((req, index) => (
-                      <div
-                        key={index}
-                        className="badge badge-light mr-2 mb-2 p-2"
-                        style={{ fontSize: '0.9em', backgroundColor: '#f8f9fc' }}
-                      >
-                        {req}
-                        <i
-                          className="fas fa-times ml-2 text-danger"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => handleRequirementDelete(index)}
-                        ></i>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-md-4">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Location <span className="text-danger">*</span></label>
+              <div className="row">
+                <div className="col-md-4 mb-3">
+                  <label htmlFor="location" className="form-label">Location *</label>
                   <input
                     type="text"
-                    className={`form-control ${errors.location ? 'is-invalid' : ''}`}
+                    className="form-control"
+                    id="location"
                     placeholder="e.g., San Francisco, CA"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    required
                   />
-                  {errors.location && (
-                    <div className="invalid-feedback">{errors.location}</div>
-                  )}
                 </div>
-              </div>
-
-              <div className="col-md-4">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Department <span className="text-danger">*</span></label>
+                <div className="col-md-4 mb-3">
+                  <label htmlFor="department" className="form-label">Department *</label>
                   <input
                     type="text"
-                    className={`form-control ${errors.department ? 'is-invalid' : ''}`}
+                    className="form-control"
+                    id="department"
                     placeholder="e.g., Engineering"
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    required
                   />
-                  {errors.department && (
-                    <div className="invalid-feedback">{errors.department}</div>
-                  )}
+                </div>
+                <div className="col-md-4 mb-3">
+                  <label htmlFor="employmentType" className="form-label">Employment Type *</label>
+                  <select
+                    className="form-select"
+                    id="employmentType"
+                    value={formData.employment_type}
+                    onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
+                    required
+                  >
+                    <option value="">Select employment type</option>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Internship">Internship</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="col-md-4">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Remote Work</label>
-                  <div className="custom-control custom-switch mt-2">
+              <div className="row">
+                <div className="col-md-4 mb-3">
+                  <label htmlFor="experienceLevel" className="form-label">Experience Level *</label>
+                  <select
+                    className="form-select"
+                    id="experienceLevel"
+                    value={formData.experience_level}
+                    onChange={(e) => setFormData({ ...formData, experience_level: e.target.value })}
+                    required
+                  >
+                    <option value="">Select experience level</option>
+                    <option value="Entry">Entry Level</option>
+                    <option value="Mid">Mid Level</option>
+                    <option value="Senior">Senior Level</option>
+                    <option value="Lead">Lead</option>
+                    <option value="Executive">Executive</option>
+                  </select>
+                </div>
+                <div className="col-md-8 mb-3">
+                  <label className="form-label d-block">Remote Work</label>
+                  <div className="form-check">
                     <input
                       type="checkbox"
-                      className="custom-control-input"
-                      id="remoteSwitch"
-                      checked={formData.isRemote}
-                      onChange={(e) => setFormData({ ...formData, isRemote: e.target.checked })}
+                      className="form-check-input"
+                      id="remoteWork"
+                      checked={formData.remote_work}
+                      onChange={(e) => setFormData({ ...formData, remote_work: e.target.checked })}
                     />
-                    <label className="custom-control-label" htmlFor="remoteSwitch">
+                    <label className="form-check-label" htmlFor="remoteWork">
                       Allow remote work
                     </label>
                   </div>
                 </div>
               </div>
 
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Employment Type <span className="text-danger">*</span></label>
+              <div className="row">
+                <div className="col-md-4 mb-3">
+                  <label htmlFor="currency" className="form-label">Currency</label>
                   <select
-                    className={`form-control ${errors.employmentType ? 'is-invalid' : ''}`}
-                    value={formData.employmentType}
-                    onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
+                    className="form-select"
+                    id="currency"
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
                   >
-                    <option value="">Select employment type</option>
-                    <option value="full-time">Full-time</option>
-                    <option value="part-time">Part-time</option>
-                    <option value="contract">Contract</option>
-                    <option value="internship">Internship</option>
+                    <option value="USD ($)">USD ($)</option>
+                    <option value="EUR (€)">EUR (€)</option>
+                    <option value="GBP (£)">GBP (£)</option>
                   </select>
-                  {errors.employmentType && (
-                    <div className="invalid-feedback">{errors.employmentType}</div>
-                  )}
                 </div>
-              </div>
-
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Experience Level <span className="text-danger">*</span></label>
-                  <select
-                    className={`form-control ${errors.experienceLevel ? 'is-invalid' : ''}`}
-                    value={formData.experienceLevel}
-                    onChange={(e) => setFormData({ ...formData, experienceLevel: e.target.value })}
-                  >
-                    <option value="">Select experience level</option>
-                    <option value="entry">Entry Level (0-2 years)</option>
-                    <option value="mid">Mid Level (3-5 years)</option>
-                    <option value="senior">Senior Level (5+ years)</option>
-                    <option value="lead">Lead Level (8+ years)</option>
-                  </select>
-                  {errors.experienceLevel && (
-                    <div className="invalid-feedback">{errors.experienceLevel}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-md-4">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Currency</label>
-                  <select
+                <div className="col-md-4 mb-3">
+                  <label htmlFor="minSalary" className="form-label">Minimum Salary *</label>
+                  <input
+                    type="text"
                     className="form-control"
-                    value={formData.salary.currency}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      salary: { ...formData.salary, currency: e.target.value }
-                    })}
+                    id="minSalary"
+                    placeholder="e.g., 50000"
+                    value={formData.min_salary}
+                    onChange={(e) => setFormData({ ...formData, min_salary: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="col-md-4 mb-3">
+                  <label htmlFor="maxSalary" className="form-label">Maximum Salary *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="maxSalary"
+                    placeholder="e.g., 80000"
+                    value={formData.max_salary}
+                    onChange={(e) => setFormData({ ...formData, max_salary: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h5>Requirements</h5>
+              <div className="mb-3">
+                <label htmlFor="requirements" className="form-label">Add a requirement</label>
+                <div className="input-group">
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="requirements"
+                    placeholder="Enter requirement"
+                    value={newRequirement}
+                    onChange={(e) => setNewRequirement(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddRequirement())}
+                  />
+                  <button 
+                    className="btn btn-outline-primary" 
+                    type="button"
+                    onClick={handleAddRequirement}
                   >
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                  </select>
+                    Add
+                  </button>
                 </div>
               </div>
-
-              <div className="col-md-4">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Minimum Salary <span className="text-danger">*</span></label>
-                  <div className="input-group">
-                    <div className="input-group-prepend">
-                      <span className="input-group-text">
-                        {formData.salary.currency === 'USD' ? '$' : formData.salary.currency === 'EUR' ? '€' : '£'}
-                      </span>
-                    </div>
-                    <input
-                      type="number"
-                      className={`form-control ${errors.salary ? 'is-invalid' : ''}`}
-                      placeholder="e.g., 50000"
-                      value={formData.salary.min || ''}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        salary: { ...formData.salary, min: Number(e.target.value) }
-                      })}
-                    />
+              <div className="requirements-list">
+                {formData.requirements.map((req, index) => (
+                  <div key={index} className="alert alert-info d-flex justify-content-between align-items-center">
+                    <span>{req}</span>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => {
+                        const newReqs = [...formData.requirements];
+                        newReqs.splice(index, 1);
+                        setFormData({ ...formData, requirements: newReqs });
+                      }}
+                    ></button>
                   </div>
-                </div>
-              </div>
-
-              <div className="col-md-4">
-                <div className="form-group">
-                  <label className="small font-weight-bold mb-1">Maximum Salary <span className="text-danger">*</span></label>
-                  <div className="input-group">
-                    <div className="input-group-prepend">
-                      <span className="input-group-text">
-                        {formData.salary.currency === 'USD' ? '$' : formData.salary.currency === 'EUR' ? '€' : '£'}
-                      </span>
-                    </div>
-                    <input
-                      type="number"
-                      className={`form-control ${errors.salary ? 'is-invalid' : ''}`}
-                      placeholder="e.g., 80000"
-                      value={formData.salary.max || ''}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        salary: { ...formData.salary, max: Number(e.target.value) }
-                      })}
-                    />
-                    {errors.salary && (
-                      <div className="invalid-feedback">{errors.salary}</div>
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </form>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -9,6 +9,25 @@ import {
 } from 'react-bootstrap';
 import { searchExternalJobs } from '../../services/api/externalJobs';
 
+interface Job {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  description: string;
+  salary_min?: number;
+  salary_max?: number;
+  redirect_url: string;
+  created: string;
+}
+
+interface SearchResults {
+  total_results: number;
+  page: number;
+  results_per_page: number;
+  jobs: Job[];
+}
+
 const ExternalJobSearch: React.FC = () => {
   // Search Parameters State
   const [searchParams, setSearchParams] = useState({
@@ -23,13 +42,17 @@ const ExternalJobSearch: React.FC = () => {
   });
 
   // Results State
-  const [searchResults, setSearchResults] = useState<any>({
-    count: 0,
-    results: []
+  const [searchResults, setSearchResults] = useState<SearchResults>({
+    total_results: 0,
+    page: 1,
+    results_per_page: 10,
+    jobs: []
   });
 
   // Loading State
   const [isLoading, setIsLoading] = useState(false);
+  // Error State
+  const [error, setError] = useState<string | null>(null);
 
   // Handle Input Changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,11 +66,13 @@ const ExternalJobSearch: React.FC = () => {
   // Handle Search
   const handleSearch = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const results = await searchExternalJobs(searchParams);
       setSearchResults(results);
     } catch (error) {
       console.error('Error searching jobs:', error);
+      setError('Failed to fetch jobs. Please try again.');
     }
     setIsLoading(false);
   };
@@ -136,19 +161,24 @@ const ExternalJobSearch: React.FC = () => {
         <Col md={9}>
           <Card>
             <Card.Header>
-              Found {searchResults.count} Jobs
+              Found {searchResults.total_results} Jobs
             </Card.Header>
             <Card.Body>
-              {searchResults.results.map((job: any) => (
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+              {searchResults.jobs.map((job: Job) => (
                 <Card key={job.id} className="mb-3">
                   <Card.Body>
                     <Card.Title>{job.title}</Card.Title>
                     <Card.Subtitle className="mb-2 text-muted">
-                      {job.company.display_name}
+                      {job.company}
                     </Card.Subtitle>
                     <Card.Text>
                       <i className="fas fa-map-marker-alt me-2"></i>
-                      {job.location.display_name}
+                      {job.location}
                       {job.salary_min && job.salary_max && (
                         <div className="text-success">
                           <i className="fas fa-money-bill me-2"></i>

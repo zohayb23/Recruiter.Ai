@@ -1,42 +1,63 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { User, LoginRequest } from '../types/api';
-import { UserRole } from '../types/api';
+import { login as loginApi, logout as logoutApi, type LoginCredentials } from '../services/api/auth';
+
+interface User {
+  username: string;
+  role?: string;
+}
 
 interface AuthContextType {
-  user: User | undefined;
+  user: User | null;
   isLoadingUser: boolean;
-  login: (credentials: LoginRequest) => void;
+  login: (credentials: LoginCredentials) => Promise<void>;
   isLoggingIn: boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user for development
-const mockUser: User = {
-  id: '1',
-  email: 'dev@recruiter.ai',
-  firstName: 'Development',
-  lastName: 'User',
-  role: UserRole.ADMIN,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
-};
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Always return authenticated state with mock user
+  const login = async (credentials: LoginCredentials) => {
+    setIsLoggingIn(true);
+    try {
+      const response = await loginApi(credentials);
+      localStorage.setItem('token', response.access_token);
+      setUser({ username: credentials.username });
+      navigate('/');
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await logoutApi();
+      localStorage.removeItem('token');
+      setUser(null);
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
+
   const value = {
-    user: mockUser,
+    user,
     isLoadingUser: false,
-    login: () => navigate('/jobs'),
-    isLoggingIn: false,
-    logout: () => navigate('/jobs'),
-    isAuthenticated: true,
+    login,
+    isLoggingIn,
+    logout,
+    isAuthenticated: !!user,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,21 +1,12 @@
-import type { Job, Candidate, User } from '../types/api';
-import { JobStatus, CandidateStatus, UserRole } from '../types/api';
+import type { User, Job, Candidate } from '../types/api';
+import { JobStatus, CandidateStatus } from '../types/api';
 
 export const mockUsers: User[] = [
   {
-    id: 'user1',
-    email: 'fayzan23@gmail.com',
-    firstName: 'Fayzan',
-    lastName: 'Bhatti',
-    role: UserRole.ADMIN,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
+    username: 'admin',
+    role: 'ADMIN'
   }
 ];
-
-export const mockTokens = {
-  'fayzan23@gmail.com': 'mock-jwt-token-12345'
-};
 
 export const mockJobs: Job[] = [
   {
@@ -33,7 +24,7 @@ export const mockJobs: Job[] = [
     },
     status: JobStatus.PUBLISHED,
     department: 'Engineering',
-    createdBy: 'user1',
+    createdBy: 'admin',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
   },
@@ -52,7 +43,7 @@ export const mockJobs: Job[] = [
     },
     status: JobStatus.PUBLISHED,
     department: 'Product',
-    createdBy: 'user1',
+    createdBy: 'admin',
     createdAt: '2024-01-02T00:00:00Z',
     updatedAt: '2024-01-02T00:00:00Z'
   },
@@ -66,7 +57,7 @@ export const mockJobs: Job[] = [
     isRemote: true,
     status: JobStatus.PUBLISHED,
     department: 'Design',
-    createdBy: 'user1',
+    createdBy: 'admin',
     createdAt: '2024-01-03T00:00:00Z',
     updatedAt: '2024-01-03T00:00:00Z'
   }

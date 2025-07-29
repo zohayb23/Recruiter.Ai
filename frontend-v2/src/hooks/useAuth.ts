@@ -1,33 +1,33 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { authApi } from '../services/api/auth';
-import type { LoginRequest } from '../types/api';
+import { login as loginApi, logout as logoutApi, type LoginCredentials } from '../services/api/auth';
+import { useState } from 'react';
 
 export const useAuth = () => {
   const navigate = useNavigate();
-
-  const { data: user, isLoading: isLoadingUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      const response = await authApi.getCurrentUser();
-      return response.data;
-    },
-    retry: false,
-  });
+  const [user, setUser] = useState<any>(null);
 
   const { mutate: login, isPending: isLoggingIn } = useMutation({
-    mutationFn: async (credentials: LoginRequest) => {
-      const response = await authApi.login(credentials);
-      return response.data;
+    mutationFn: async (credentials: LoginCredentials) => {
+      const response = await loginApi(credentials);
+      // Store the token
+      localStorage.setItem('token', response.access_token);
+      // Set user state
+      setUser({ username: credentials.username });
+      return response;
     },
-    onSuccess: (data) => {
-      localStorage.setItem('token', data.token);
-      navigate('/jobs');
+    onSuccess: () => {
+      navigate('/');
     },
   });
 
   const { mutate: logout } = useMutation({
-    mutationFn: authApi.logout,
+    mutationFn: async () => {
+      await logoutApi();
+      // Clear token and user state
+      localStorage.removeItem('token');
+      setUser(null);
+    },
     onSuccess: () => {
       navigate('/login');
     },
@@ -35,7 +35,7 @@ export const useAuth = () => {
 
   return {
     user,
-    isLoadingUser,
+    isLoadingUser: false,
     login,
     isLoggingIn,
     logout,

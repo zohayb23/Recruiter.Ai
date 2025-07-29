@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import apiClient from '../services/api/config';
+import { parseResume, type ParsedResume } from '../services/api/resumeParser';
 
 const ResumeParserPage = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<any>(null);
+  const [parsedData, setParsedData] = useState<ParsedResume | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,21 +37,9 @@ const ResumeParserPage = () => {
     setLoading(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await apiClient.post('/resume-parser/parse', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (response.data.success) {
-        setParsedData(response.data.data);
-      } else {
-        setError(response.data.message || 'Error parsing resume');
-      }
+      const data = await parseResume(file);
+      setParsedData(data);
     } catch (err: any) {
       console.error('Resume parsing error:', err);
       setError(err.response?.data?.detail || err.response?.data?.message || 'Error parsing resume');
@@ -76,7 +64,6 @@ const ResumeParserPage = () => {
             <p><strong>Name:</strong> {parsedData.full_name}</p>
             <p><strong>Email:</strong> {parsedData.contact?.email}</p>
             <p><strong>Phone:</strong> {parsedData.contact?.phone}</p>
-            <p><strong>Location:</strong> {parsedData.contact?.location}</p>
             {parsedData.contact?.linkedin && (
               <p><strong>LinkedIn:</strong> <a href={parsedData.contact.linkedin} target="_blank" rel="noopener noreferrer">{parsedData.contact.linkedin}</a></p>
             )}
@@ -89,14 +76,14 @@ const ResumeParserPage = () => {
           </div>
         </div>
 
-        {/* Summary */}
-        {parsedData.summary && (
+        {/* Professional Summary */}
+        {parsedData.professional_summary && (
           <div className="card shadow mb-4">
             <div className="card-header py-3">
               <h6 className="m-0 font-weight-bold text-primary">Professional Summary</h6>
             </div>
             <div className="card-body">
-              <p>{parsedData.summary}</p>
+              <p>{parsedData.professional_summary}</p>
             </div>
           </div>
         )}
@@ -108,7 +95,7 @@ const ResumeParserPage = () => {
               <h6 className="m-0 font-weight-bold text-primary">Work Experience</h6>
             </div>
             <div className="card-body">
-              {parsedData.work_experience.map((exp: any, index: number) => (
+              {parsedData.work_experience.map((exp, index) => (
                 <div key={index} className="mb-4">
                   <h6 className="font-weight-bold">{exp.title} at {exp.company}</h6>
                   <p className="text-muted small">
@@ -116,7 +103,7 @@ const ResumeParserPage = () => {
                   </p>
                   {exp.description && (
                     <ul className="pl-4">
-                      {exp.description.map((desc: string, i: number) => (
+                      {exp.description.map((desc, i) => (
                         <li key={i}>{desc}</li>
                       ))}
                     </ul>
@@ -139,7 +126,7 @@ const ResumeParserPage = () => {
               <h6 className="m-0 font-weight-bold text-primary">Education</h6>
             </div>
             <div className="card-body">
-              {parsedData.education.map((edu: any, index: number) => (
+              {parsedData.education.map((edu, index) => (
                 <div key={index} className="mb-3">
                   <h6 className="font-weight-bold">{edu.degree}</h6>
                   <p className="mb-1">{edu.institution}</p>
@@ -166,53 +153,26 @@ const ResumeParserPage = () => {
             </div>
             <div className="card-body">
               {Object.entries(
-                parsedData.skills.reduce((acc: any, skill: any) => {
-                  if (!acc[skill.category]) acc[skill.category] = [];
-                  acc[skill.category].push({
+                parsedData.skills.reduce((acc: Record<string, any[]>, skill) => {
+                  const category = skill.category || 'Other';
+                  if (!acc[category]) acc[category] = [];
+                  acc[category].push({
                     name: skill.name,
-                    level: skill.level,
+                    proficiency_level: skill.proficiency_level,
                     years: skill.years_of_experience
                   });
                   return acc;
                 }, {})
-              ).map(([category, skills]: [string, any]) => (
+              ).map(([category, skills]) => (
                 <div key={category} className="mb-3">
                   <h6 className="font-weight-bold text-capitalize">{category}</h6>
                   <p>
                     {skills.map((skill: any) => (
-                      `${skill.name}${skill.level ? ` (${skill.level})` : ''}${skill.years ? ` - ${skill.years} years` : ''}`
+                      `${skill.name}${skill.proficiency_level ? ` (${skill.proficiency_level})` : ''}${skill.years ? ` - ${skill.years} years` : ''}`
                     )).join(', ')}
                   </p>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Certifications */}
-        {parsedData.certifications && parsedData.certifications.length > 0 && (
-          <div className="card shadow mb-4">
-            <div className="card-header py-3">
-              <h6 className="m-0 font-weight-bold text-primary">Certifications</h6>
-            </div>
-            <div className="card-body">
-              <ul className="pl-4">
-                {parsedData.certifications.map((cert: string, index: number) => (
-                  <li key={index}>{cert}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* Languages */}
-        {parsedData.languages && parsedData.languages.length > 0 && (
-          <div className="card shadow mb-4">
-            <div className="card-header py-3">
-              <h6 className="m-0 font-weight-bold text-primary">Languages</h6>
-            </div>
-            <div className="card-body">
-              <p>{parsedData.languages.join(', ')}</p>
             </div>
           </div>
         )}

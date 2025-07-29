@@ -14,7 +14,7 @@ import { useAuth } from '../../hooks/useAuth';
 const LoginPage = () => {
   const { login, isLoggingIn } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   });
   const [error, setError] = useState<string | null>(null);
@@ -71,12 +71,12 @@ const LoginPage = () => {
               margin="normal"
               required
               fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
+              id="username"
+              label="Username"
+              name="username"
+              autoComplete="username"
               autoFocus
-              value={formData.email}
+              value={formData.username}
               onChange={handleChange}
               disabled={isLoggingIn}
             />

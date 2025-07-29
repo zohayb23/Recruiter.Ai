@@ -1,49 +1,43 @@
 import axios from 'axios';
-import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
 export const API_BASE_URL = 'http://localhost:8804/api';
 
-// Define base API configuration
-const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8804/api',
-  timeout: 300000, // 5 minutes timeout
+export const api = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-};
-
-// Create axios instance
-const apiClient: AxiosInstance = axios.create(API_CONFIG);
+});
 
 // Request interceptor
-apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    // For file uploads, ensure proper content type
-    if (config.data instanceof FormData) {
-      config.headers['Content-Type'] = 'multipart/form-data';
-    }
+api.interceptors.request.use(
+  (config) => {
+    // You can add auth token here if needed
     return config;
   },
-  (error: AxiosError) => {
+  (error) => {
     return Promise.reject(error);
   }
 );
 
 // Response interceptor
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // Handle errors here
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('Response error:', error.response.data);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('Request error:', error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error:', error.message);
     }
     return Promise.reject(error);
   }
-);
-
-export default apiClient; 
+); 

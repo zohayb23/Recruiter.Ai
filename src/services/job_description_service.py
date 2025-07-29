@@ -1,193 +1,113 @@
-from typing import Dict, List, Optional
-from sqlalchemy.orm import Session
-import openai
+from typing import Optional, List, Dict
+from ..models.job_description import JobDescription, JobDescriptionResponse, JobDescriptionSuggestions, MarketAnalysis
 from datetime import datetime
-import json
-import os
-
-from ..database.models import Job, JobDescription
-from ..models.job_description import JobDescriptionCreate, JobRequirements
+import uuid
 
 class JobDescriptionService:
     def __init__(self):
-        """Initialize the job description service with OpenAI client"""
-        self.openai_client = openai.OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY")
+        self.job_descriptions = {}  # In-memory storage for now
+
+    async def create_job_description(self, data: dict) -> JobDescriptionResponse:
+        """Create a new job description"""
+        jd_id = str(uuid.uuid4())
+        job_description = JobDescription(
+            id=jd_id,
+            title=data.get("title", ""),
+            department=data.get("department", ""),
+            location=data.get("location", ""),
+            employment_type=data.get("employment_type", "Full-time"),
+            experience_level=data.get("experience_level", ""),
+            overview=data.get("overview", ""),
+            responsibilities=data.get("responsibilities", []),
+            qualifications=data.get("qualifications", []),
+            required_skills=data.get("required_skills", []),
+            preferred_skills=data.get("preferred_skills", []),
+            benefits=data.get("benefits", []),
+            company_description=data.get("company_description", ""),
+            culture_values=data.get("culture_values", ""),
+            diversity_statement=data.get("diversity_statement", ""),
+            status="draft",
+            created_at=datetime.now().isoformat(),
+            updated_at=datetime.now().isoformat()
         )
-        
-        # Load job description templates
-        self.templates = {
-            "default": """
-                {company_name} is seeking a {job_title}
-
-                About the Role:
-                {job_summary}
-
-                Key Responsibilities:
-                {responsibilities}
-
-                Required Qualifications:
-                {required_qualifications}
-
-                Preferred Qualifications:
-                {preferred_qualifications}
-
-                Benefits & Perks:
-                {benefits}
-
-                About {company_name}:
-                {company_description}
-
-                {equal_opportunity_statement}
-            """.strip()
-        }
-
-    def generate_description(
-        self,
-        db: Session,
-        requirements: JobRequirements
-    ) -> Dict:
-        """Generate a job description using AI"""
-        
-        # Prepare the prompt for the AI
-        prompt = f"""
-        Create a professional job description for a {requirements.job_title} position.
-        
-        Use these details:
-        - Company: {requirements.company_name}
-        - Industry: {requirements.industry}
-        - Experience Level: {requirements.experience_level}
-        - Required Skills: {', '.join(requirements.required_skills)}
-        - Location: {requirements.location}
-        - Employment Type: {requirements.employment_type}
-        
-        Additional Context:
-        {requirements.additional_context}
-        
-        Generate these sections:
-        1. Job Summary
-        2. Key Responsibilities
-        3. Required Qualifications
-        4. Preferred Qualifications
-        5. Benefits & Perks
-        
-        Format as JSON with these keys:
-        job_summary, responsibilities, required_qualifications, preferred_qualifications, benefits
-        """
-
-        # Generate content using OpenAI
-        response = self.openai_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {"role": "system", "content": "You are an expert technical recruiter and professional writer."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"}
+        self.job_descriptions[jd_id] = job_description
+        return JobDescriptionResponse(
+            job_description=job_description,
+            message="Job description created successfully"
         )
 
-        # Parse the AI response
-        content = json.loads(response.choices[0].message.content)
-        
-        # Apply the template
-        description = self.templates["default"].format(
-            company_name=requirements.company_name,
-            job_title=requirements.job_title,
-            job_summary=content["job_summary"],
-            responsibilities=content["responsibilities"],
-            required_qualifications=content["required_qualifications"],
-            preferred_qualifications=content["preferred_qualifications"],
-            benefits=content["benefits"],
-            company_description=requirements.company_description,
-            equal_opportunity_statement=requirements.equal_opportunity_statement
+    async def get_job_description(self, jd_id: str) -> Optional[JobDescriptionResponse]:
+        """Get a job description by ID"""
+        if jd_id not in self.job_descriptions:
+            return None
+        return JobDescriptionResponse(
+            job_description=self.job_descriptions[jd_id],
+            message="Job description retrieved successfully"
         )
 
-        # Create a new job description record
-        db_description = JobDescription(
-            job_title=requirements.job_title,
-            company_name=requirements.company_name,
-            content=description,
-            raw_requirements=requirements.dict(),
-            generated_content=content,
-            created_at=datetime.utcnow()
-        )
-        
-        db.add(db_description)
-        db.commit()
-        db.refresh(db_description)
-        
-        return {
-            "id": db_description.id,
-            "content": description,
-            "sections": content
-        }
+    async def list_job_descriptions(self) -> List[JobDescription]:
+        """List all job descriptions"""
+        return list(self.job_descriptions.values())
 
-    def refine_description(
-        self,
-        db: Session,
-        description_id: str,
-        feedback: str
-    ) -> Dict:
-        """Refine an existing job description based on feedback"""
+    async def update_job_description(self, jd_id: str, data: dict) -> Optional[JobDescriptionResponse]:
+        """Update a job description"""
+        if jd_id not in self.job_descriptions:
+            return None
         
-        # Get the original description
-        db_description = (
-            db.query(JobDescription)
-            .filter(JobDescription.id == description_id)
-            .first()
-        )
+        jd = self.job_descriptions[jd_id]
+        updated_data = jd.dict()
+        updated_data.update(data)
+        updated_data["updated_at"] = datetime.now().isoformat()
         
-        if not db_description:
-            raise ValueError("Job description not found")
+        updated_jd = JobDescription(**updated_data)
+        self.job_descriptions[jd_id] = updated_jd
         
-        # Prepare the refinement prompt
-        prompt = f"""
-        Refine this job description based on the feedback:
-
-        Original Description:
-        {db_description.content}
-
-        Feedback:
-        {feedback}
-
-        Return the refined description in the same JSON format as before.
-        """
-
-        # Generate refined content
-        response = self.openai_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {"role": "system", "content": "You are an expert technical recruiter and professional writer."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"}
+        return JobDescriptionResponse(
+            job_description=updated_jd,
+            message="Job description updated successfully"
         )
 
-        # Parse and format the refined content
-        content = json.loads(response.choices[0].message.content)
+    async def delete_job_description(self, jd_id: str) -> bool:
+        """Delete a job description"""
+        if jd_id not in self.job_descriptions:
+            return False
+        del self.job_descriptions[jd_id]
+        return True
+
+    async def publish_job_description(self, jd_id: str) -> Optional[JobDescriptionResponse]:
+        """Publish a job description"""
+        if jd_id not in self.job_descriptions:
+            return None
         
-        # Apply the template
-        description = self.templates["default"].format(
-            company_name=db_description.company_name,
-            job_title=db_description.job_title,
-            job_summary=content["job_summary"],
-            responsibilities=content["responsibilities"],
-            required_qualifications=content["required_qualifications"],
-            preferred_qualifications=content["preferred_qualifications"],
-            benefits=content["benefits"],
-            company_description=db_description.raw_requirements["company_description"],
-            equal_opportunity_statement=db_description.raw_requirements["equal_opportunity_statement"]
+        jd = self.job_descriptions[jd_id]
+        updated_data = jd.dict()
+        updated_data["status"] = "published"
+        updated_data["updated_at"] = datetime.now().isoformat()
+        
+        updated_jd = JobDescription(**updated_data)
+        self.job_descriptions[jd_id] = updated_jd
+        
+        return JobDescriptionResponse(
+            job_description=updated_jd,
+            message="Job description published successfully"
         )
 
-        # Update the description
-        db_description.content = description
-        db_description.generated_content = content
-        db_description.updated_at = datetime.utcnow()
+    async def archive_job_description(self, jd_id: str) -> Optional[JobDescriptionResponse]:
+        """Archive a job description"""
+        if jd_id not in self.job_descriptions:
+            return None
         
-        db.commit()
-        db.refresh(db_description)
+        jd = self.job_descriptions[jd_id]
+        updated_data = jd.dict()
+        updated_data["status"] = "archived"
+        updated_data["updated_at"] = datetime.now().isoformat()
         
-        return {
-            "id": db_description.id,
-            "content": description,
-            "sections": content
-        } 
+        updated_jd = JobDescription(**updated_data)
+        self.job_descriptions[jd_id] = updated_jd
+        
+        return JobDescriptionResponse(
+            job_description=updated_jd,
+            message="Job description archived successfully"
+        )
+
+job_description_service = JobDescriptionService() 

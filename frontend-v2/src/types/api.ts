@@ -2,39 +2,41 @@
 export interface ApiResponse<T> {
   data: T;
   message?: string;
-  status: number;
-}
-
-// Authentication types
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  token: string;
-  user: User;
 }
 
 export interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: UserRole;
-  createdAt: string;
-  updatedAt: string;
+  username: string;
+  role?: string;
 }
 
-export const UserRole = {
-  ADMIN: 'ADMIN',
-  RECRUITER: 'RECRUITER',
-  HIRING_MANAGER: 'HIRING_MANAGER',
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export const JobStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED'
 } as const;
 
-export type UserRole = typeof UserRole[keyof typeof UserRole];
+export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
 
-// Job types
+export const CandidateStatus = {
+  NEW: 'NEW',
+  SCREENING: 'SCREENING',
+  INTERVIEWING: 'INTERVIEWING',
+  HIRED: 'HIRED',
+  REJECTED: 'REJECTED'
+} as const;
+
+export type CandidateStatus = typeof CandidateStatus[keyof typeof CandidateStatus];
+
 export interface Job {
   id: string;
   title: string;
@@ -42,7 +44,7 @@ export interface Job {
   description: string;
   requirements: string[];
   location: string;
-  isRemote: boolean;
+  isRemote?: boolean;
   salary?: {
     min: number;
     max: number;
@@ -55,56 +57,25 @@ export interface Job {
   updatedAt: string;
 }
 
-export const JobStatus = {
-  DRAFT: 'DRAFT',
-  PUBLISHED: 'PUBLISHED',
-  CLOSED: 'CLOSED',
-} as const;
-
-export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
-
-// Job filters
-export interface Filters {
-  status: string;
-  department: string;
-  search: string;
-  page: number;
-  limit: number;
-}
-
-// Candidate types
 export interface Candidate {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
-  location?: string;
-  currentPosition?: string;
+  phone: string;
+  location: string;
+  currentPosition: string;
   experience: number;
   skills: string[];
-  education: Education[];
+  education: Array<{
+    institution: string;
+    degree: string;
+    field: string;
+    startDate: string;
+    endDate: string;
+  }>;
   resumeUrl?: string;
   status: CandidateStatus;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface Education {
-  institution: string;
-  degree: string;
-  field: string;
-  startDate: string;
-  endDate?: string;
-}
-
-export const CandidateStatus = {
-  NEW: 'NEW',
-  SCREENING: 'SCREENING',
-  INTERVIEWING: 'INTERVIEWING',
-  OFFERED: 'OFFERED',
-  HIRED: 'HIRED',
-  REJECTED: 'REJECTED',
-} as const;
-
-export type CandidateStatus = typeof CandidateStatus[keyof typeof CandidateStatus]; 
+} 

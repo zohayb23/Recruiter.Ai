@@ -1,44 +1,52 @@
-import type { ApiResponse, Job } from '../../types/api';
-import apiClient from './config';
+import { api } from './config';
+
+export interface Job {
+  id: string;
+  title: string;
+  description: string;
+  requirements: string[];
+  location: string;
+  salary_range?: string;
+  status: 'open' | 'closed' | 'draft';
+  created_at: string;
+  updated_at: string;
+}
 
 export interface JobFilters {
-  id?: string;
   status?: string;
-  department?: string;
+  location?: string;
   search?: string;
   page?: number;
   limit?: number;
 }
 
 export interface JobsResponse {
-  jobs: Job[];
+  data: Job[];
   total: number;
   page: number;
-  totalPages: number;
+  limit: number;
 }
 
-export const jobsApi = {
-  getJobs: async (filters: JobFilters = {}): Promise<ApiResponse<JobsResponse>> => {
-    const response = await apiClient.get<ApiResponse<JobsResponse>>('/jobs', { params: filters });
-    return response.data;
-  },
+export const searchJobs = async (filters: JobFilters): Promise<JobsResponse> => {
+  const response = await api.get('/jobs/search', { params: filters });
+  return response.data;
+};
 
-  getJob: async (id: string): Promise<ApiResponse<Job>> => {
-    const response = await apiClient.get<ApiResponse<Job>>(`/jobs/${id}`);
-    return response.data;
-  },
+export const getJobById = async (id: string): Promise<Job> => {
+  const response = await api.get(`/jobs/${id}`);
+  return response.data;
+};
 
-  createJob: async (job: Omit<Job, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Job>> => {
-    const response = await apiClient.post<ApiResponse<Job>>('/jobs', job);
-    return response.data;
-  },
+export const createJob = async (job: Partial<Job>): Promise<Job> => {
+  const response = await api.post('/jobs', job);
+  return response.data;
+};
 
-  updateJob: async (id: string, job: Partial<Job>): Promise<ApiResponse<Job>> => {
-    const response = await apiClient.put<ApiResponse<Job>>(`/jobs/${id}`, job);
-    return response.data;
-  },
+export const updateJob = async (id: string, updates: Partial<Job>): Promise<Job> => {
+  const response = await api.put(`/jobs/${id}`, updates);
+  return response.data;
+};
 
-  deleteJob: async (id: string): Promise<void> => {
-    await apiClient.delete(`/jobs/${id}`);
-  },
+export const deleteJob = async (id: string): Promise<void> => {
+  await api.delete(`/jobs/${id}`);
 }; 
