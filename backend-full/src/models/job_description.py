@@ -18,6 +18,8 @@ class JobDescription(BaseModel):
     id: str
     title: str
     department: Optional[str] = None
+    location_type: Optional[str] = "remote"
+    location: Optional[str] = None
     experience_level: Optional[str] = None
     overview: Optional[str] = None
     responsibilities: List[Responsibility] = []
@@ -36,6 +38,8 @@ class JobDescriptionResponse(BaseModel):
     id: str
     title: str
     department: Optional[str] = None
+    location_type: Optional[str] = "remote"
+    location: Optional[str] = None
     experience_level: Optional[str] = None
     overview: Optional[str] = None
     responsibilities: List[Responsibility] = []

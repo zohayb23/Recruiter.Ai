@@ -8,6 +8,8 @@ class GenerateJobDescriptionRequest(BaseModel):
     title: str
     company: Optional[str] = None
     department: Optional[str] = None
+    location_type: Optional[str] = "remote"
+    location: Optional[str] = None
     experience_level: Optional[str] = None
     required_skills: Optional[List[str]] = None
     company_info: Optional[Dict] = None
@@ -46,6 +48,8 @@ class SaveJobDescriptionRequest(BaseModel):
     title: str
     company: Optional[str] = None
     department: Optional[str] = None
+    location_type: Optional[str] = "remote"
+    location: Optional[str] = None
     experience_level: Optional[str] = None
     overview: Optional[str] = None
     responsibilities: Optional[List[ResponsibilityModel]] = []
@@ -81,6 +85,8 @@ class JobDescriptionResponse(BaseModel):
     title: str
     company: Optional[str] = None
     department: Optional[str] = None
+    location_type: Optional[str] = "remote"
+    location: Optional[str] = None
     experience_level: Optional[str] = None
     overview: Optional[str] = None
     responsibilities: Optional[List[ResponsibilityModel]] = []

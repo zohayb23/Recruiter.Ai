@@ -15,15 +15,21 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 - ✅ Job status management (Draft/Published)
 
 #### Resume Processing
-- ✅ Resume parsing from multiple formats (PDF, DOCX)
+- ✅ Resume parsing from multiple formats (PDF, DOCX, DOC, TXT, RTF)
+- ✅ GPT-4 powered intelligent resume parsing with high accuracy
 - ✅ Automatic information extraction:
-  - Contact details
-  - Work experience
-  - Education history
-  - Skills
+  - Contact details (email, phone, location)
+  - Professional summary
+  - Work experience with detailed responsibilities
+  - Education history with GPA and majors
+  - Categorized skills (programming, cloud, frameworks, etc.)
+  - Professional certifications
   - Links (LinkedIn, GitHub, Portfolio)
+  - Languages and proficiency levels
+- ✅ Content-based caching system for faster repeat processing
 - ✅ Parsed resume display with collapsible sections
 - ✅ Vector storage in Milvus for efficient searching
+- ✅ Sentence transformer embeddings for semantic search
 
 #### Candidate Management
 - ✅ Candidate listing page
@@ -49,11 +55,12 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 
 ### Backend
 - FastAPI (Python)
-- OpenAI API (GPT-4)
-- spaCy (NLP)
-- Sentence Transformers
-- PyPDF2 & python-docx (File parsing)
-- Pydantic (Data validation)
+- OpenAI API (GPT-4) for intelligent parsing and generation
+- Sentence Transformers (all-MiniLM-L6-v2) for embeddings
+- PyPDF2, python-docx, textract for multi-format parsing
+- Pydantic for data validation and serialization
+- Content-based caching system for performance
+- Asynchronous processing with asyncio
 
 ### Database
 - Milvus (Vector Database)
@@ -88,9 +95,16 @@ python -m spacy download en_core_web_sm
 #### Environment Variables
 Create a \`.env\` file in the \`backend-full\` directory:
 \`\`\`env
+# OpenAI Configuration (required for resume parsing and job description generation)
 OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4-1106-preview  # or your preferred GPT-4 model
+
+# Milvus Configuration
 MILVUS_HOST=localhost
 MILVUS_PORT=19530
+
+# Optional Performance Tuning
+CACHE_ENABLED=true  # Enable/disable resume parsing cache
 \`\`\`
 
 #### Start Milvus
@@ -177,6 +191,13 @@ npm test
    - Clear node_modules: \`rm -rf node_modules\`
    - Reinstall dependencies: \`npm install\`
    - Clear Vite cache: \`npm run clean\`
+
+4. **Resume Processing Performance**
+   - First-time processing takes ~1 minute (GPT-4 analysis)
+   - Subsequent processing of same file is instant (cache hit)
+   - Cache is content-based (changing file content triggers reprocessing)
+   - Cache persists between server restarts
+   - Check cache directory: \`backend-full/cache/resumes\`
 
 ## 📚 Additional Resources
 

@@ -4,7 +4,7 @@ from ..services.vector_store.milvus_service import milvus_service
 from typing import List, Dict, Any
 from datetime import datetime
 
-router = APIRouter(prefix="/api/resume-parser", tags=["resume-parser"])
+router = APIRouter(prefix="/resume-parser", tags=["resume-parser"])
 
 @router.post("/parse")
 async def parse_resume(file: UploadFile = File(...)):

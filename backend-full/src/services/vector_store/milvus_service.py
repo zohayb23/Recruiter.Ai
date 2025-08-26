@@ -14,6 +14,7 @@ from datetime import datetime
 import random
 import json
 import os
+import warnings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,7 +29,13 @@ class MilvusService:
         self.dim = 384  # Dimension of the sentence-transformer model
         self.is_connected = False
         self.collection = None
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        # Cache the model locally and suppress initialization messages
+        cache_folder = os.path.join(os.path.dirname(__file__), "../../../models/sentence_transformer")
+        os.makedirs(cache_folder, exist_ok=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
+            self.model = SentenceTransformer('all-MiniLM-L6-v2', cache_folder=cache_folder)
         
         # Connect to Milvus
         if self.connect():
@@ -72,6 +79,9 @@ class MilvusService:
                 FieldSchema(name="full_name", dtype=DataType.VARCHAR, max_length=MAX_SHORT_TEXT),
                 FieldSchema(name="email", dtype=DataType.VARCHAR, max_length=MAX_SHORT_TEXT),
                 FieldSchema(name="phone", dtype=DataType.VARCHAR, max_length=MAX_SHORT_TEXT),
+                FieldSchema(name="linkedin", dtype=DataType.VARCHAR, max_length=MAX_SHORT_TEXT),
+                FieldSchema(name="github", dtype=DataType.VARCHAR, max_length=MAX_SHORT_TEXT),
+                FieldSchema(name="website", dtype=DataType.VARCHAR, max_length=MAX_SHORT_TEXT),
                 FieldSchema(name="file_path", dtype=DataType.VARCHAR, max_length=MAX_MEDIUM_TEXT),
                 FieldSchema(name="skills", dtype=DataType.VARCHAR, max_length=MAX_LONG_TEXT),
                 FieldSchema(name="education", dtype=DataType.VARCHAR, max_length=MAX_LONG_TEXT),
@@ -114,6 +124,9 @@ class MilvusService:
             "full_name": self._truncate_field(str(data.get("full_name", "")), MAX_SHORT_TEXT),
             "email": self._truncate_field(str(data.get("email", "")), MAX_SHORT_TEXT),
             "phone": self._truncate_field(str(data.get("phone", "")), MAX_SHORT_TEXT),
+            "linkedin": self._truncate_field(str(data.get("linkedin", "")), MAX_SHORT_TEXT),
+            "github": self._truncate_field(str(data.get("github", "")), MAX_SHORT_TEXT),
+            "website": self._truncate_field(str(data.get("website", "")), MAX_SHORT_TEXT),
             "file_path": self._truncate_field(str(data.get("file_path", "")), MAX_MEDIUM_TEXT),
         }
 
@@ -152,19 +165,25 @@ class MilvusService:
             logger.error(f"Error preparing data for insert: {e}")
             raise
 
-    def insert_resume(self, resume_data: dict):
+    async def insert_resume(self, resume_data: dict):
         """Insert a resume into the collection"""
         try:
+            # Ensure connection is active
+            if not self.ensure_connection():
+                raise Exception("Failed to connect to Milvus")
+
             # Prepare data for insertion
             data = self._prepare_data_for_insert(resume_data)
             
             # Insert the data
-            self.collection.insert([data])
+            result = self.collection.insert([data])
             self.collection.flush()  # Ensure data is persisted
             logger.info(f"Successfully inserted resume {data['resume_id']}")
+            return result
         except Exception as e:
-            logger.error(f"Failed to insert resume: {e}")
-            raise
+            error_msg = f"Failed to insert resume: {str(e)}"
+            logger.error(error_msg)
+            raise Exception(error_msg)
     
     def ensure_connection(self) -> bool:
         """Ensure connection to Milvus and collection is ready"""

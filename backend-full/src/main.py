@@ -1,6 +1,27 @@
+import logging
+import warnings
 from fastapi import FastAPI
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s: %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+
+# Suppress huggingface and other noisy warnings
+logging.getLogger("huggingface_hub.utils._http").setLevel(logging.ERROR)
+logging.getLogger("huggingface_hub.utils._validators").setLevel(logging.ERROR)
+warnings.filterwarnings('ignore', category=FutureWarning)
+
+# Suppress specific torch warning about encoder_attention_mask
+warnings.filterwarnings('ignore', message='.*encoder_attention_mask.*')
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import resume_parser_router, job_description_router, matching_router
+from .routers.resume_parser import router as resume_parser_router
+from .routers.job_description import router as job_description_router
+from .routers.matching import router as matching_router
 
 app = FastAPI(title="Recruiter.AI Backend")
 

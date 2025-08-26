@@ -18,6 +18,7 @@ class JobDescriptionService:
         self.model = "gpt-4"  # Using GPT-4 for better quality
 
     async def generate_job_description(self, title: str, department: Optional[str] = None, 
+                                     location_type: Optional[str] = "remote", location: Optional[str] = None,
                                      experience_level: Optional[str] = None, required_skills: Optional[List[str]] = None,
                                      company_info: Optional[Dict] = None) -> Dict:
         """Generate a job description using OpenAI"""
@@ -26,6 +27,8 @@ class JobDescriptionService:
             prompt = f"""Create a detailed job description for the following position:
             Title: {title}
             Department: {department if department else 'Not specified'}
+            Location Type: {location_type}
+            Location: {location if location else 'Not specified'}
             Experience Level: {experience_level if experience_level else 'Not specified'}
             Required Skills: {', '.join(required_skills) if required_skills else 'Not specified'}
             Company: {company_info.get('company', 'Not specified') if company_info else 'Not specified'}
@@ -88,6 +91,8 @@ class JobDescriptionService:
                 id=jd_id,
                 title=data.get("title", ""),
                 department=data.get("department", ""),
+                location_type=data.get("location_type", "remote"),
+                location=data.get("location", ""),
                 experience_level=data.get("experience_level", ""),
                 overview=data.get("overview", ""),
                 responsibilities=data.get("responsibilities", []),
