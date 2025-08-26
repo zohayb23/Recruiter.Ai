@@ -128,15 +128,17 @@ class ResumeParserService:
             permanent_file_path = await self._store_file(temp_file_path, file.filename)
 
             # Create ParsedResume object
+            # Handle potentially null values from GPT response
+            contact_info = parsed_data.get("personal_info", {})
             parsed_resume = ParsedResume(
                 resume_id=str(uuid.uuid4()),
-                full_name=parsed_data["personal_info"]["name"],
+                full_name=contact_info.get("name", "Unknown"),
                 contact=Contact(
-                    email=parsed_data["personal_info"].get("email", ""),
-                    phone=parsed_data["personal_info"].get("phone", ""),
-                    linkedin=parsed_data["personal_info"].get("linkedin", ""),
-                    github=parsed_data["personal_info"].get("github", ""),
-                    website=parsed_data["personal_info"].get("website", "")
+                    email=contact_info.get("email", ""),
+                    phone=contact_info.get("phone", ""),
+                    linkedin=contact_info.get("linkedin", ""),
+                    github=contact_info.get("github", "") if contact_info.get("github") is not None else "",
+                    website=contact_info.get("website", "") if contact_info.get("website") is not None else ""
                 ),
                 education=[
                     Education(

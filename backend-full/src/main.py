@@ -19,9 +19,22 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 # Suppress specific torch warning about encoder_attention_mask
 warnings.filterwarnings('ignore', message='.*encoder_attention_mask.*')
 from fastapi.middleware.cors import CORSMiddleware
-from .routers.resume_parser import router as resume_parser_router
-from .routers.job_description import router as job_description_router
-from .routers.matching import router as matching_router
+import sys
+import os
+
+# Add the project root to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    # Try relative imports first (for when running from backend-full directory)
+    from .routers.resume_parser import router as resume_parser_router
+    from .routers.job_description import router as job_description_router
+    from .routers.matching import router as matching_router
+except ImportError:
+    # Fall back to absolute imports (for when running from project root)
+    from src.routers.resume_parser import router as resume_parser_router
+    from src.routers.job_description import router as job_description_router
+    from src.routers.matching import router as matching_router
 
 app = FastAPI(title="Recruiter.AI Backend")
 

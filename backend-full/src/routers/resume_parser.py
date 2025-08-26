@@ -1,6 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from ..services.resume_parser.resume_parser_service import resume_parser_service
-from ..services.vector_store.milvus_service import milvus_service
+try:
+    # Try relative imports first
+    from ..services.resume_parser.resume_parser_service import resume_parser_service
+    from ..services.vector_store.milvus_service import milvus_service
+except ImportError:
+    # Fall back to absolute imports
+    from src.services.resume_parser.resume_parser_service import resume_parser_service
+    from src.services.vector_store.milvus_service import milvus_service
 from typing import List, Dict, Any
 from datetime import datetime
 

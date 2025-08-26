@@ -192,14 +192,17 @@ class MilvusService:
             logger.error(f"Error preparing data for insert: {e}")
             raise
 
-    def insert_resume(self, resume_data: dict):
+    async def insert_resume(self, resume_data: dict):
         """Insert a resume into the collection"""
         try:
+            if not self.ensure_connection():
+                raise Exception("Failed to connect to Milvus")
             # Prepare data for insertion
             data = self._prepare_data_for_insert(resume_data)
             
             # Insert the data
             self.collection.insert([data])
+            self.collection.flush()  # Ensure data is written
             logger.info(f"Successfully inserted resume {data['resume_id']}")
         except Exception as e:
             logger.error(f"Failed to insert resume: {e}")

@@ -6,8 +6,8 @@ class Contact(BaseModel):
     email: str = ""
     phone: str = ""
     linkedin: str = ""
-    github: str = ""
-    website: str = ""
+    github: Optional[str] = ""  # Make github optional with empty string default
+    website: Optional[str] = ""  # Make website optional with empty string default
 
 class Education(BaseModel):
     degree: str

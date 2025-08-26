@@ -30,6 +30,8 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 - ✅ Parsed resume display with collapsible sections
 - ✅ Vector storage in Milvus for efficient searching
 - ✅ Sentence transformer embeddings for semantic search
+- ✅ Intelligent categorization validation to prevent misclassification
+- ✅ Local model caching for improved startup performance
 
 #### Candidate Management
 - ✅ Candidate listing page
@@ -38,10 +40,48 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 - ✅ Resume data persistence
 
 ### Features in Development
-- 🔄 Candidate-Job Matching Engine
-- 🔄 Advanced Search Filters
-- 🔄 Email Integration
-- 🔄 Analytics Dashboard
+
+#### Candidate-Job Matching System
+- 🔄 Semantic similarity scoring
+- 🔄 Configurable matching criteria
+- 🔄 Weighted scoring algorithm
+- 🔄 Location and work-type preferences
+- 🔄 Match percentage visualization
+
+#### Enhanced Candidate Profiles
+- 🔄 Dynamic profile data integration
+- 🔄 Interactive experience timeline
+- 🔄 Skills matrix with proficiency levels
+- 🔄 Candidate status tracking
+- 🔄 Document management system
+
+#### Cloud Deployment (GCP)
+- 🔄 Cloud Run service configuration
+- 🔄 Managed database setup
+- 🔄 Milvus cloud deployment
+- 🔄 CI/CD pipeline
+- 🔄 Monitoring and logging
+
+#### AI Recruitment Assistant
+- 🔄 Intelligent chatbot integration
+- 🔄 Candidate screening flows
+- 🔄 Multi-language support
+- 🔄 Context-aware responses
+- 🔄 Human handoff system
+
+#### UI/UX Improvements
+- 🔄 Responsive design implementation
+- 🔄 Design system creation
+- 🔄 Dark/light mode support
+- 🔄 Enhanced data visualizations
+- 🔄 Accessibility compliance
+
+#### Analytics Dashboard
+- 🔄 Recruitment metrics tracking
+- 🔄 Interactive visualizations
+- 🔄 Customizable layouts
+- 🔄 Predictive analytics
+- 🔄 Report generation
 
 ## 🛠 Tech Stack
 
@@ -55,12 +95,13 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 
 ### Backend
 - FastAPI (Python)
-- OpenAI API (GPT-4) for intelligent parsing and generation
+- OpenAI API (GPT-4 Turbo) for intelligent parsing and generation
 - Sentence Transformers (all-MiniLM-L6-v2) for embeddings
 - PyPDF2, python-docx, textract for multi-format parsing
 - Pydantic for data validation and serialization
 - Content-based caching system for performance
 - Asynchronous processing with asyncio
+- Local model caching for improved startup
 
 ### Database
 - Milvus (Vector Database)
@@ -93,11 +134,11 @@ python -m spacy download en_core_web_sm
 \`\`\`
 
 #### Environment Variables
-Create a \`.env\` file in the \`backend-full\` directory:
+Create a `.env` file in the `backend-full` directory:
 \`\`\`env
 # OpenAI Configuration (required for resume parsing and job description generation)
 OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4-1106-preview  # or your preferred GPT-4 model
+OPENAI_MODEL=gpt-4-1106-preview  # Required for JSON response format
 
 # Milvus Configuration
 MILVUS_HOST=localhost
@@ -105,6 +146,7 @@ MILVUS_PORT=19530
 
 # Optional Performance Tuning
 CACHE_ENABLED=true  # Enable/disable resume parsing cache
+SUPPRESS_HF_WARNINGS=true  # Suppress Hugging Face warnings during startup
 \`\`\`
 
 #### Start Milvus
@@ -126,7 +168,7 @@ npm install
 \`\`\`
 
 #### Environment Variables
-Create a \`.env\` file in the \`frontend-v2\` directory:
+Create a `.env` file in the `frontend-v2` directory:
 \`\`\`env
 VITE_API_BASE_URL=http://localhost:8804
 \`\`\`
@@ -136,7 +178,7 @@ VITE_API_BASE_URL=http://localhost:8804
 npm run dev
 \`\`\`
 
-The application will be available at \`http://localhost:5173\`
+The application will be available at `http://localhost:5173`
 
 ## 📁 Project Structure
 
@@ -147,6 +189,8 @@ Recruiter.AI/
 │   │   ├── main.py             # FastAPI application entry
 │   │   ├── routers/            # API route handlers
 │   │   └── services/           # Business logic
+│   │       ├── resume_parser/  # Resume parsing services
+│   │       └── vector_store/   # Milvus integration
 │   └── requirements.txt        # Python dependencies
 ├── frontend-v2/                # Frontend application
 │   ├── src/
@@ -159,7 +203,7 @@ Recruiter.AI/
 \`\`\`
 
 ## 🔑 API Keys Required
-- OpenAI API Key (for job description generation)
+- OpenAI API Key (for resume parsing and job description generation)
 
 ## 🧪 Testing
 
@@ -179,25 +223,33 @@ npm test
 
 1. **Milvus Connection Issues**
    - Ensure Docker is running
-   - Check if Milvus containers are up: \`docker ps\`
+   - Check if Milvus containers are up: `docker ps`
    - Verify Milvus port (19530) is not in use
+   - If schema errors occur, drop the collection and restart
 
 2. **OpenAI API Errors**
-   - Verify API key is correctly set in \`.env\`
+   - Verify API key is correctly set in `.env`
    - Check API key has sufficient credits
-   - Ensure requests are properly formatted
+   - Ensure using GPT-4 Turbo (gpt-4-1106-preview) for JSON responses
+   - Handle rate limits with exponential backoff
 
 3. **Frontend Build Issues**
-   - Clear node_modules: \`rm -rf node_modules\`
-   - Reinstall dependencies: \`npm install\`
-   - Clear Vite cache: \`npm run clean\`
+   - Clear node_modules: `rm -rf node_modules`
+   - Reinstall dependencies: `npm install`
+   - Clear Vite cache: `npm run clean`
 
 4. **Resume Processing Performance**
    - First-time processing takes ~1 minute (GPT-4 analysis)
    - Subsequent processing of same file is instant (cache hit)
    - Cache is content-based (changing file content triggers reprocessing)
    - Cache persists between server restarts
-   - Check cache directory: \`backend-full/cache/resumes\`
+   - Check cache directory: `backend-full/cache/resumes`
+   - Local model caching improves startup time
+
+5. **Import and Path Issues**
+   - Always run server from project root: `uvicorn src.main:app --reload --port 8804`
+   - Ensure Python path includes project root
+   - Check for correct relative vs absolute imports
 
 ## 📚 Additional Resources
 
@@ -209,9 +261,9 @@ npm test
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch: \`git checkout -b feature/AmazingFeature\`
-3. Commit your changes: \`git commit -m 'Add some AmazingFeature'\`
-4. Push to the branch: \`git push origin feature/AmazingFeature\`
+2. Create your feature branch: `git checkout -b feature/AmazingFeature`
+3. Commit your changes: `git commit -m 'Add some AmazingFeature'`
+4. Push to the branch: `git push origin feature/AmazingFeature`
 5. Open a pull request
 
 ## 📝 License
