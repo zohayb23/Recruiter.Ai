@@ -1,6 +1,16 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { parseResume, type ResumeParseResponse } from '../../services/api/resumeParser';
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Paper,
+  Button,
+  Alert
+} from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { parseResume } from '../../services/api/resumeParser';
+import type { ResumeParseResponse } from '../../services/api/resumeParser';
 
 interface ResumeUploaderProps {
   onParseComplete: (result: ResumeParseResponse) => void;
@@ -9,18 +19,22 @@ interface ResumeUploaderProps {
 
 const ResumeUploader: React.FC<ResumeUploaderProps> = ({ onParseComplete, onError }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
 
     const file = acceptedFiles[0];
     setIsUploading(true);
+    setUploadError(null);
 
     try {
       const result = await parseResume(file);
       onParseComplete(result);
     } catch (error) {
-      onError(error instanceof Error ? error : new Error('Failed to parse resume'));
+      console.error('Error parsing resume:', error);
+      setUploadError(error instanceof Error ? error.message : 'Error uploading file');
+      onError(error instanceof Error ? error : new Error('Error uploading file'));
     } finally {
       setIsUploading(false);
     }
@@ -30,8 +44,8 @@ const ResumeUploader: React.FC<ResumeUploaderProps> = ({ onParseComplete, onErro
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'text/plain': ['.txt']
     },
     maxFiles: 1,
@@ -39,44 +53,55 @@ const ResumeUploader: React.FC<ResumeUploaderProps> = ({ onParseComplete, onErro
   });
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <div
+    <Box>
+      <Paper
         {...getRootProps()}
-        className={`
-          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-          transition-colors duration-200 ease-in-out
-          ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary'}
-        `}
+        elevation={0}
+        sx={{
+          border: '2px dashed',
+          borderColor: isDragActive ? 'primary.main' : 'grey.300',
+          borderRadius: 2,
+          bgcolor: isDragActive ? 'action.hover' : 'background.paper',
+          p: 4,
+          textAlign: 'center',
+          cursor: 'pointer',
+          '&:hover': {
+            bgcolor: 'action.hover'
+          }
+        }}
       >
         <input {...getInputProps()} />
-        
+        <CloudUploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
         {isUploading ? (
-          <div className="space-y-4">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
-            <p className="text-gray-600">Parsing resume...</p>
-          </div>
+          <Box display="flex" flexDirection="column" alignItems="center">
+            <CircularProgress size={24} sx={{ mb: 2 }} />
+            <Typography>Processing resume...</Typography>
+          </Box>
         ) : (
-          <div className="space-y-4">
-            <div className="text-4xl text-gray-400">
-              <i className="fas fa-file-upload"></i>
-            </div>
-            
-            <div className="space-y-2">
-              <p className="text-lg font-medium text-gray-700">
-                {isDragActive ? 'Drop your resume here' : 'Drag & drop your resume here'}
-              </p>
-              <p className="text-sm text-gray-500">
-                or click to select a file
-              </p>
-              <p className="text-xs text-gray-400">
-                Supported formats: PDF, DOCX, DOC, TXT
-              </p>
-            </div>
-          </div>
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              {isDragActive ? 'Drop the resume here' : 'Drag & drop a resume here'}
+            </Typography>
+            <Typography color="text.secondary" gutterBottom>
+              or
+            </Typography>
+            <Button variant="contained" component="span">
+              Browse Files
+            </Button>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              Supported formats: PDF, DOC, DOCX, TXT
+            </Typography>
+          </Box>
         )}
-      </div>
-    </div>
+      </Paper>
+
+      {uploadError && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {uploadError}
+        </Alert>
+      )}
+    </Box>
   );
 };
 
-export default ResumeUploader; 
+export default ResumeUploader;

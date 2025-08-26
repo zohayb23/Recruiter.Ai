@@ -4,10 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 
 // Components
-import BootstrapJobListingView from './components/jobs/BootstrapJobListingView';
-import JobDetailPage from './components/jobs/JobDetailPage';
+import JobListingsPage from './pages/JobListingsPage';
+import JobDetailPage from './pages/JobDetailPage';
+import JobMatchingPage from './pages/JobMatchingPage';
 import JobMatchingInterface from './components/jobs/JobMatchingInterface';
-import BootstrapCandidateListingView from './components/candidates/BootstrapCandidateListingView';
+import CandidatesPage from './pages/CandidatesPage';
 import CandidateDetailPage from './components/candidates/CandidateDetailPage';
 import ResumeImportPage from './components/candidates/ResumeImportPage';
 import BootstrapMainLayout from './components/layout/BootstrapMainLayout';
@@ -16,7 +17,7 @@ import BootstrapLoginPage from './components/auth/BootstrapLoginPage';
 import ExternalJobsPage from './pages/ExternalJobsPage';
 import JobDescriptionGenerator from './pages/JobDescriptionGenerator';
 import ResumeParserPage from './pages/ResumeParserPage';
-import { BootstrapJobCreationForm } from './components/jobs/BootstrapJobCreationForm';
+import BootstrapJobCreationForm from './components/jobs/BootstrapJobCreationForm';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -36,16 +37,16 @@ function App() {
           <Routes>
             <Route element={<BootstrapMainLayout />}>
               {/* Job Routes */}
-              <Route path="/jobs" element={<BootstrapJobListingView />} />
+              <Route path="/jobs" element={<JobListingsPage />} />
               <Route path="/jobs/create" element={<BootstrapJobCreationForm />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
               <Route path="/jobs/:id/edit" element={<BootstrapJobCreationForm />} />
-              <Route path="/jobs/:id/matches" element={<JobMatchingInterface />} />
+              <Route path="/jobs/:id/matches" element={<JobMatchingPage />} />
               <Route path="/jobs/external" element={<ExternalJobsPage />} />
               <Route path="/jobs/description/generate" element={<JobDescriptionGenerator />} />
               
               {/* Candidate Routes */}
-              <Route path="/candidates" element={<BootstrapCandidateListingView />} />
+              <Route path="/candidates" element={<CandidatesPage />} />
               <Route path="/candidates/import" element={<ResumeImportPage />} />
               <Route path="/candidates/:id" element={<CandidateDetailPage />} />
               

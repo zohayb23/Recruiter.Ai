@@ -1,228 +1,139 @@
 from fastapi import APIRouter, HTTPException
-from typing import List
-from ..models.job_description import JobDescription, JobDescriptionResponse
+from typing import List, Dict, Optional
+from pydantic import BaseModel, Field
+from datetime import datetime
 from ..services.job_description_service import job_description_service
 
-router = APIRouter()
+class GenerateJobDescriptionRequest(BaseModel):
+    title: str
+    company: Optional[str] = None
+    department: Optional[str] = None
+    experience_level: Optional[str] = None
+    required_skills: Optional[List[str]] = None
+    company_info: Optional[Dict] = None
 
-@router.post("/job-descriptions", response_model=JobDescriptionResponse)
-async def create_job_description(data: dict):
-    """Create a new job description"""
+class ResponsibilityModel(BaseModel):
+    description: str = Field(..., description="The description of the responsibility")
+    is_required: bool = Field(True, description="Whether this responsibility is required")
+
+class QualificationModel(BaseModel):
+    description: str = Field(..., description="The description of the qualification")
+    is_required: bool = Field(True, description="Whether this qualification is required")
+
+class BenefitModel(BaseModel):
+    title: str = Field(..., description="The title of the benefit")
+    description: str = Field("", description="Additional details about the benefit")
+
+class SaveJobDescriptionRequest(BaseModel):
+    title: str = Field(..., description="The job title")
+    company: Optional[str] = Field(None, description="The company name")
+    department: Optional[str] = Field(None, description="The department name")
+    experience_level: Optional[str] = Field(None, description="The required experience level")
+    overview: Optional[str] = Field(None, description="Overview of the job")
+    responsibilities: Optional[List[ResponsibilityModel]] = Field(default_factory=list, description="List of job responsibilities")
+    qualifications: Optional[List[QualificationModel]] = Field(default_factory=list, description="List of required qualifications")
+    required_skills: Optional[List[str]] = Field(default_factory=list, description="List of required skills")
+    preferred_skills: Optional[List[str]] = Field(default_factory=list, description="List of preferred skills")
+    benefits: Optional[List[BenefitModel]] = Field(default_factory=list, description="List of job benefits")
+    company_description: Optional[str] = Field(None, description="Description of the company")
+    culture_values: Optional[str] = Field(None, description="Company culture and values")
+    diversity_statement: Optional[str] = Field(None, description="Diversity and inclusion statement")
+    status: Optional[str] = Field("draft", description="Status of the job description")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "title": "Senior Software Engineer",
+                "company": "TechCorp",
+                "department": "Engineering",
+                "experience_level": "Senior",
+                "overview": "We are seeking a talented Senior Software Engineer...",
+                "responsibilities": [
+                    {"description": "Design and implement scalable solutions", "is_required": True}
+                ],
+                "qualifications": [
+                    {"description": "5+ years of software development experience", "is_required": True}
+                ],
+                "required_skills": ["Python", "JavaScript"],
+                "preferred_skills": ["React", "AWS"],
+                "benefits": [
+                    {"title": "Health Insurance", "description": "Full medical, dental, and vision coverage"}
+                ],
+                "company_description": "TechCorp is a leading software company...",
+                "culture_values": "We value innovation and collaboration...",
+                "diversity_statement": "We are committed to building a diverse team...",
+                "status": "draft"
+            }
+        }
+
+class JobDescriptionResponse(BaseModel):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    status: str
+    title: str
+    company: Optional[str] = None
+    department: Optional[str] = None
+    experience_level: Optional[str] = None
+    overview: Optional[str] = None
+    responsibilities: Optional[List[ResponsibilityModel]] = None
+    qualifications: Optional[List[QualificationModel]] = None
+    required_skills: Optional[List[str]] = None
+    preferred_skills: Optional[List[str]] = None
+    benefits: Optional[List[BenefitModel]] = None
+    company_description: Optional[str] = None
+    culture_values: Optional[str] = None
+    diversity_statement: Optional[str] = None
+
+router = APIRouter(prefix="/job-descriptions", tags=["job-descriptions"])
+
+@router.post("/generate", response_model=Dict)
+async def generate_job_description(data: GenerateJobDescriptionRequest):
+    """Generate a job description using OpenAI"""
     try:
-        jd = job_description_service.create_job_description(data)
-        return JobDescriptionResponse(
-            success=True,
-            data=jd,
-            message="Job description created successfully"
+        return await job_description_service.generate_job_description(
+            title=data.title,
+            department=data.department,
+            experience_level=data.experience_level,
+            required_skills=data.required_skills,
+            company_info={"company": data.company} if data.company else None
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error creating job description: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/job-descriptions/{job_id}", response_model=JobDescriptionResponse)
+@router.post("/save", response_model=JobDescriptionResponse)
+async def save_job_description(data: SaveJobDescriptionRequest):
+    """Save a job description as draft or publish it"""
+    try:
+        # Convert Pydantic model to dict
+        job_data = data.dict(exclude_unset=True)
+        return await job_description_service.save_job_description(job_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("", response_model=List[JobDescriptionResponse])
+async def get_all_job_descriptions():
+    """Get all job descriptions"""
+    try:
+        return await job_description_service.get_job_descriptions()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/drafts", response_model=List[JobDescriptionResponse])
+async def get_draft_job_descriptions():
+    """Get all draft job descriptions"""
+    try:
+        return await job_description_service.get_job_descriptions(status="draft")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{job_id}", response_model=JobDescriptionResponse)
 async def get_job_description(job_id: str):
-    """Get a job description by ID"""
-    jd = job_description_service.get_job_description(job_id)
-    if not jd:
-        raise HTTPException(
-            status_code=404,
-            detail="Job description not found"
-        )
-    return JobDescriptionResponse(
-        success=True,
-        data=jd,
-        message="Job description retrieved successfully"
-    )
-
-@router.get("/job-descriptions", response_model=JobDescriptionResponse)
-async def list_job_descriptions():
-    """List all job descriptions"""
+    """Get a specific job description by ID"""
     try:
-        jds = job_description_service.list_job_descriptions()
-        return JobDescriptionResponse(
-            success=True,
-            data=jds,
-            message=f"Found {len(jds)} job descriptions"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error listing job descriptions: {str(e)}"
-        )
-
-@router.put("/job-descriptions/{job_id}", response_model=JobDescriptionResponse)
-async def update_job_description(job_id: str, data: dict):
-    """Update a job description"""
-    try:
-        jd = job_description_service.update_job_description(job_id, data)
+        jd = await job_description_service.get_job_description(job_id)
         if not jd:
-            raise HTTPException(
-                status_code=404,
-                detail="Job description not found"
-            )
-        return JobDescriptionResponse(
-            success=True,
-            data=jd,
-            message="Job description updated successfully"
-        )
-    except HTTPException:
-        raise
+            raise HTTPException(status_code=404, detail="Job description not found")
+        return jd
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error updating job description: {str(e)}"
-        )
-
-@router.delete("/job-descriptions/{job_id}", response_model=JobDescriptionResponse)
-async def delete_job_description(job_id: str):
-    """Delete a job description"""
-    try:
-        success = job_description_service.delete_job_description(job_id)
-        if not success:
-            raise HTTPException(
-                status_code=404,
-                detail="Job description not found"
-            )
-        return JobDescriptionResponse(
-            success=True,
-            data=None,
-            message="Job description deleted successfully"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error deleting job description: {str(e)}"
-        )
-
-@router.post("/job-descriptions/{job_id}/publish", response_model=JobDescriptionResponse)
-async def publish_job_description(job_id: str):
-    """Publish a job description"""
-    try:
-        jd = job_description_service.publish_job_description(job_id)
-        if not jd:
-            raise HTTPException(
-                status_code=404,
-                detail="Job description not found"
-            )
-        return JobDescriptionResponse(
-            success=True,
-            data=jd,
-            message="Job description published successfully"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error publishing job description: {str(e)}"
-        )
-
-@router.post("/job-descriptions/{job_id}/archive", response_model=JobDescriptionResponse)
-async def archive_job_description(job_id: str):
-    """Archive a job description"""
-    try:
-        jd = job_description_service.archive_job_description(job_id)
-        if not jd:
-            raise HTTPException(
-                status_code=404,
-                detail="Job description not found"
-            )
-        return JobDescriptionResponse(
-            success=True,
-            data=jd,
-            message="Job description archived successfully"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error archiving job description: {str(e)}"
-        )
-
-@router.post("/job-descriptions/generate", response_model=JobDescriptionResponse)
-async def generate_job_description(data: dict):
-    """Generate a job description using AI"""
-    try:
-        jd = await job_description_service.generate_job_description(data)
-        if not jd:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to generate job description"
-            )
-        return JobDescriptionResponse(
-            success=True,
-            data=jd,
-            message="Job description generated successfully"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating job description: {str(e)}"
-        )
-
-@router.post("/job-descriptions/{job_id}/improve", response_model=JobDescriptionResponse)
-async def improve_job_description(job_id: str):
-    """Get improvement suggestions for a job description"""
-    try:
-        jd = job_description_service.get_job_description(job_id)
-        if not jd:
-            raise HTTPException(
-                status_code=404,
-                detail="Job description not found"
-            )
-
-        suggestions = await job_description_service.improve_job_description(jd.dict())
-        if not suggestions:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to generate suggestions"
-            )
-
-        return JobDescriptionResponse(
-            success=True,
-            data=suggestions,
-            message="Improvement suggestions generated successfully"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating suggestions: {str(e)}"
-        )
-
-@router.post("/job-descriptions/{job_id}/market-analysis", response_model=JobDescriptionResponse)
-async def analyze_market_alignment(job_id: str):
-    """Analyze job description market alignment"""
-    try:
-        jd = job_description_service.get_job_description(job_id)
-        if not jd:
-            raise HTTPException(
-                status_code=404,
-                detail="Job description not found"
-            )
-
-        analysis = await job_description_service.analyze_market_alignment(jd.dict())
-        if not analysis:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to generate market analysis"
-            )
-
-        return JobDescriptionResponse(
-            success=True,
-            data=analysis,
-            message="Market analysis generated successfully"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating market analysis: {str(e)}"
-        ) 
+        raise HTTPException(status_code=500, detail=str(e)) 

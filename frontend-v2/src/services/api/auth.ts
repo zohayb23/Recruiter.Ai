@@ -12,7 +12,7 @@ export interface AuthResponse {
 
 export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   const response = await api.post('/auth/login', credentials);
-  return response.data;
+    return response.data;
 };
 
 export const logout = async (): Promise<void> => {

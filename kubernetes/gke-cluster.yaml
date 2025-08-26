@@ -1,0 +1,22 @@
+apiVersion: container.v1.beta1
+kind: Cluster
+metadata:
+  name: recruiter-ai-cluster
+spec:
+  # Use a smaller, regional cluster
+  locations:
+  - us-central1-a  # Single zone instead of regional to reduce resource usage
+  initialNodeCount: 1
+  nodeConfig:
+    machineType: e2-standard-2  # 2 vCPUs, 8GB memory
+    diskSizeGb: 50
+    diskType: pd-standard
+  # Disable some features to reduce resource usage
+  addonsConfig:
+    httpLoadBalancing:
+      disabled: false
+    horizontalPodAutoscaling:
+      disabled: false
+  # Use latest stable release channel
+  releaseChannel:
+    channel: REGULAR

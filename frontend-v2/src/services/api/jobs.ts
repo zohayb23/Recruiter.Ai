@@ -29,22 +29,22 @@ export interface JobsResponse {
 
 export const searchJobs = async (filters: JobFilters): Promise<JobsResponse> => {
   const response = await api.get('/jobs/search', { params: filters });
-  return response.data;
+    return response.data;
 };
 
 export const getJobById = async (id: string): Promise<Job> => {
   const response = await api.get(`/jobs/${id}`);
-  return response.data;
+    return response.data;
 };
 
 export const createJob = async (job: Partial<Job>): Promise<Job> => {
   const response = await api.post('/jobs', job);
-  return response.data;
+    return response.data;
 };
 
 export const updateJob = async (id: string, updates: Partial<Job>): Promise<Job> => {
   const response = await api.put(`/jobs/${id}`, updates);
-  return response.data;
+    return response.data;
 };
 
 export const deleteJob = async (id: string): Promise<void> => {

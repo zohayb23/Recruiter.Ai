@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: milvus-standalone
+  namespace: recruiter-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: milvus-standalone
+  template:
+    metadata:
+      labels:
+        app: milvus-standalone
+    spec:
+      containers:
+        - name: milvus
+          image: milvusdb/milvus:v2.3.4
+          command: ["milvus", "run", "standalone"]
+          ports:
+            - containerPort: 19530
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          env:
+            - name: ETCD_ENDPOINTS
+              value: localhost:2379
+          volumeMounts:
+            - name: milvus-data
+              mountPath: /var/lib/milvus
+      volumes:
+        - name: milvus-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: milvus
+  namespace: recruiter-ai
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 19530
+      targetPort: 19530
+  selector:
+    app: milvus-standalone

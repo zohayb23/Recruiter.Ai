@@ -8,7 +8,7 @@ import sys
 # Add the project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.routers import external_jobs, resume_parser, job_description
+from src.routers import external_jobs, resume_parser, job_description, candidates
 
 app = FastAPI(title="Recruiter.AI Backend")
 
@@ -26,12 +26,15 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Include routers
 app.include_router(external_jobs.router)
 app.include_router(resume_parser.router)
 app.include_router(job_description.router, prefix="/api")
+app.include_router(candidates.router)
 
 @app.get("/health")
 async def health_check():

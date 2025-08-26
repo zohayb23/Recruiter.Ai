@@ -1,7 +1,9 @@
+// API configuration
+export const API_BASE_URL = 'http://localhost:8804';
+
 import axios from 'axios';
 
-export const API_BASE_URL = 'http://localhost:8804/api';
-
+// Create axios instance with default config
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -9,35 +11,21 @@ export const api = axios.create({
   },
 });
 
-// Request interceptor
-api.interceptors.request.use(
-  (config) => {
-    // You can add auth token here if needed
-    return config;
-  },
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
+    // Log the full error details
+    console.error('API Error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.config?.data,
+      }
+    });
     return Promise.reject(error);
   }
 );
-
-// Response interceptor
-api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    // Handle errors here
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error('Response error:', error.response.data);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('Request error:', error.request);
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('Error:', error.message);
-    }
-    return Promise.reject(error);
-  }
-); 

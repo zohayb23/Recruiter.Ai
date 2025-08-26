@@ -46,7 +46,7 @@ export const CandidateDetailPage: React.FC = () => {
     },
     professional_summary: "Experienced Senior Software Engineer with 8+ years of industry experience. Proficient in Python, React, and cloud technologies. Led multiple successful projects and teams.",
     work_experience: [
-      {
+    {
         title: "Senior Software Engineer",
         company: "Tech Corp",
         start_date: "2020-01-01",

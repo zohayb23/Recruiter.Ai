@@ -1,121 +1,242 @@
 import React, { useState } from 'react';
-import { generateJobDescription, createJobDescription, type JobDescription } from '../../services/api/jobDescriptions';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { generateJobDescription, saveJobDescription } from '../../services/api/jobDescriptions';
 
-interface JobFormData {
+interface FormData {
   title: string;
   company: string;
-  description: string;
-  location: string;
   department: string;
-  employment_type: string;
+  location_type: 'remote' | 'in-person' | 'hybrid';
+  location: string;
+  key_skills: string[];
   experience_level: string;
-  remote_work: boolean;
-  currency: string;
-  min_salary: string;
-  max_salary: string;
-  requirements: string[];
+  status: string;
+  overview?: string;
+  responsibilities?: string[];
+  qualifications?: string[];
+  required_skills?: string[];
+  preferred_skills?: string[];
+  benefits?: Array<{ title: string; description: string }>;
+  company_description?: string;
+  culture_values?: string;
+  diversity_statement?: string;
 }
 
-export const BootstrapJobCreationForm: React.FC = () => {
-  const [formData, setFormData] = useState<JobFormData>({
+const BootstrapJobCreationForm: React.FC = () => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showGeneratedContent, setShowGeneratedContent] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     company: '',
-    description: '',
-    location: '',
     department: '',
-    employment_type: '',
+    location_type: 'remote',
+    location: '',
+    key_skills: [],
     experience_level: '',
-    remote_work: false,
-    currency: 'USD ($)',
-    min_salary: '',
-    max_salary: '',
-    requirements: []
+    status: 'draft'
   });
-  const [newRequirement, setNewRequirement] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [skillInput, setSkillInput] = useState('');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddSkill = () => {
+    if (skillInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        key_skills: [...prev.key_skills, skillInput.trim()]
+      }));
+      setSkillInput('');
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      key_skills: prev.key_skills.filter(skill => skill !== skillToRemove)
+    }));
+  };
 
   const handleGenerateJobDescription = async () => {
-    try {
-      setIsGenerating(true);
-      setError(null);
-      
-      const response = await generateJobDescription({
-        title: formData.title,
-        department: formData.department,
-        experience_level: formData.experience_level,
-        required_skills: formData.requirements
-      });
+    if (!formData.title) {
+      toast.error('Please enter a job title');
+      return;
+    }
 
+    setIsLoading(true);
+    try {
+      const response = await generateJobDescription(formData);
       setFormData(prev => ({
         ...prev,
-        title: response.title || prev.title,
-        description: response.overview || prev.description,
-        department: response.department || prev.department,
-        experience_level: response.experience_level || prev.experience_level,
-        requirements: [
-          ...(response.responsibilities?.map((r: { description: string }) => r.description) || []),
-          ...(response.qualifications?.map((q: { description: string }) => q.description) || [])
-        ]
+        ...response
       }));
-    } catch (error: any) {
+      setShowGeneratedContent(true);
+      toast.success('Job description generated successfully!');
+    } catch (error) {
       console.error('Error generating job description:', error);
-      setError(error.response?.data?.message || 'Error generating job description');
+      toast.error('Failed to generate job description. Please try again.');
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false);
     }
   };
 
-  const handleAddRequirement = () => {
-    if (newRequirement.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        requirements: [...prev.requirements, newRequirement.trim()]
-      }));
-      setNewRequirement('');
-    }
-  };
-
-  const handleSaveAsDraft = async () => {
+  const handlePublishJob = async () => {
     try {
-      const jobData: JobDescription = {
-        title: formData.title,
-        department: formData.department,
-        location: formData.location,
-        employment_type: formData.employment_type,
-        experience_level: formData.experience_level,
-        overview: formData.description,
-        responsibilities: formData.requirements.map(r => ({ description: r, is_required: true })),
-        qualifications: [],
-        required_skills: [],
-        preferred_skills: [],
-        benefits: [],
-        company_description: '',
-        culture_values: '',
-        diversity_statement: '',
-        status: 'draft'
+      const jobData = {
+        ...formData,
+        status: 'published'
       };
-
-      await createJobDescription(jobData);
-      // TODO: Show success message and redirect to job listings
-    } catch (error: any) {
-      console.error('Error saving job description:', error);
-      setError(error.response?.data?.message || 'Error saving job description');
+      await saveJobDescription(jobData);
+      toast.success('Job successfully published!');
+      setTimeout(() => {
+        navigate('/jobs');
+      }, 500);
+    } catch (error) {
+      console.error('Error publishing job:', error);
+      toast.error('Failed to publish job. Please try again.');
     }
   };
 
   return (
     <div className="container-fluid">
+      <div className="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 className="h3 mb-0 text-gray-800">Create New Job Posting</h1>
+      </div>
+
       <div className="card shadow mb-4">
-        <div className="card-header py-3 d-flex justify-content-between align-items-center">
-          <h6 className="m-0 font-weight-bold text-primary">Create New Job Posting</h6>
-          <div>
-            <button 
-              className="btn btn-primary me-2"
+        <div className="card-header py-3">
+          <h6 className="m-0 font-weight-bold text-primary">Basic Information</h6>
+        </div>
+        <div className="card-body">
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <label className="form-label">Job Title*</label>
+              <input
+                type="text"
+                className="form-control"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="e.g., Senior Software Engineer"
+              />
+              <small className="text-muted">This is the only required field. Our AI will help generate the rest!</small>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Company</label>
+              <input
+                type="text"
+                className="form-control"
+                name="company"
+                value={formData.company}
+                onChange={handleInputChange}
+                placeholder="Enter company name (optional)"
+              />
+            </div>
+          </div>
+
+          <div className="row mb-3">
+            <div className="col-md-4">
+              <label className="form-label">Department</label>
+              <input
+                type="text"
+                className="form-control"
+                name="department"
+                value={formData.department}
+                onChange={handleInputChange}
+                placeholder="e.g., Engineering (optional)"
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Location Type</label>
+              <select
+                className="form-select"
+                name="location_type"
+                value={formData.location_type}
+                onChange={handleInputChange}
+              >
+                <option value="remote">Remote</option>
+                <option value="in-person">In-Person</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Location</label>
+              <input
+                type="text"
+                className="form-control"
+                name="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                placeholder={formData.location_type === 'remote' ? 'Anywhere' : 'e.g., New York, NY'}
+                disabled={formData.location_type === 'remote'}
+              />
+            </div>
+          </div>
+
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <label className="form-label">Experience Level</label>
+              <select
+                className="form-select"
+                name="experience_level"
+                value={formData.experience_level}
+                onChange={handleInputChange}
+              >
+                <option value="">Select experience level (optional)</option>
+                <option value="entry">Entry Level</option>
+                <option value="mid">Mid Level</option>
+                <option value="senior">Senior Level</option>
+                <option value="lead">Lead/Manager</option>
+                <option value="executive">Executive</option>
+              </select>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Key Skills</label>
+              <div className="input-group">
+                <input
+                  type="text"
+                  className="form-control"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddSkill()}
+                  placeholder="Enter key skills (optional)"
+                />
+                <button
+                  className="btn btn-outline-secondary"
+                  type="button"
+                  onClick={handleAddSkill}
+                >
+                  Add
+                </button>
+              </div>
+              <small className="text-muted">Add any key skills for the role (optional). Our AI will suggest additional relevant skills.</small>
+              <div className="mt-2">
+                {formData.key_skills.map((skill, index) => (
+                  <span key={index} className="badge bg-primary me-2 mb-2">
+                    {skill}
+                    <button
+                      type="button"
+                      className="btn-close btn-close-white ms-2"
+                      onClick={() => handleRemoveSkill(skill)}
+                      style={{ fontSize: '0.5rem' }}
+                    ></button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-4">
+            <button
+              className="btn btn-primary btn-lg"
               onClick={handleGenerateJobDescription}
-              disabled={isGenerating}
+              disabled={isLoading}
             >
-              {isGenerating ? (
+              {isLoading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   Generating...
@@ -127,228 +248,126 @@ export const BootstrapJobCreationForm: React.FC = () => {
                 </>
               )}
             </button>
-            <button 
-              className="btn btn-secondary me-2"
-              onClick={handleSaveAsDraft}
-            >
-              Save as Draft
-            </button>
-            <button className="btn btn-primary">Publish Job</button>
           </div>
         </div>
-        <div className="card-body">
-          {error && (
-            <div className="alert alert-danger mb-4" role="alert">
-              {error}
-            </div>
-          )}
-          <form>
-            <div className="mb-4">
-              <h5>Job Details</h5>
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="jobTitle" className="form-label">Job Title *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="jobTitle"
-                    placeholder="e.g., Senior Software Engineer"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <label htmlFor="company" className="form-label">Company *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="company"
-                    placeholder="Enter company name"
-                    value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <label htmlFor="jobDescription" className="form-label">Job Description *</label>
-                <textarea
-                  className="form-control"
-                  id="jobDescription"
-                  rows={5}
-                  placeholder="Enter detailed job description or use the 'Generate Job Description' button above"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                ></textarea>
-              </div>
-
-              <div className="row">
-                <div className="col-md-4 mb-3">
-                  <label htmlFor="location" className="form-label">Location *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="location"
-                    placeholder="e.g., San Francisco, CA"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="col-md-4 mb-3">
-                  <label htmlFor="department" className="form-label">Department *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="department"
-                    placeholder="e.g., Engineering"
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="col-md-4 mb-3">
-                  <label htmlFor="employmentType" className="form-label">Employment Type *</label>
-                  <select
-                    className="form-select"
-                    id="employmentType"
-                    value={formData.employment_type}
-                    onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
-                    required
-                  >
-                    <option value="">Select employment type</option>
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Internship">Internship</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="row">
-                <div className="col-md-4 mb-3">
-                  <label htmlFor="experienceLevel" className="form-label">Experience Level *</label>
-                  <select
-                    className="form-select"
-                    id="experienceLevel"
-                    value={formData.experience_level}
-                    onChange={(e) => setFormData({ ...formData, experience_level: e.target.value })}
-                    required
-                  >
-                    <option value="">Select experience level</option>
-                    <option value="Entry">Entry Level</option>
-                    <option value="Mid">Mid Level</option>
-                    <option value="Senior">Senior Level</option>
-                    <option value="Lead">Lead</option>
-                    <option value="Executive">Executive</option>
-                  </select>
-                </div>
-                <div className="col-md-8 mb-3">
-                  <label className="form-label d-block">Remote Work</label>
-                  <div className="form-check">
-                    <input
-                      type="checkbox"
-                      className="form-check-input"
-                      id="remoteWork"
-                      checked={formData.remote_work}
-                      onChange={(e) => setFormData({ ...formData, remote_work: e.target.checked })}
-                    />
-                    <label className="form-check-label" htmlFor="remoteWork">
-                      Allow remote work
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="row">
-                <div className="col-md-4 mb-3">
-                  <label htmlFor="currency" className="form-label">Currency</label>
-                  <select
-                    className="form-select"
-                    id="currency"
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  >
-                    <option value="USD ($)">USD ($)</option>
-                    <option value="EUR (€)">EUR (€)</option>
-                    <option value="GBP (£)">GBP (£)</option>
-                  </select>
-                </div>
-                <div className="col-md-4 mb-3">
-                  <label htmlFor="minSalary" className="form-label">Minimum Salary *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="minSalary"
-                    placeholder="e.g., 50000"
-                    value={formData.min_salary}
-                    onChange={(e) => setFormData({ ...formData, min_salary: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="col-md-4 mb-3">
-                  <label htmlFor="maxSalary" className="form-label">Maximum Salary *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="maxSalary"
-                    placeholder="e.g., 80000"
-                    value={formData.max_salary}
-                    onChange={(e) => setFormData({ ...formData, max_salary: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <h5>Requirements</h5>
-              <div className="mb-3">
-                <label htmlFor="requirements" className="form-label">Add a requirement</label>
-                <div className="input-group">
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="requirements"
-                    placeholder="Enter requirement"
-                    value={newRequirement}
-                    onChange={(e) => setNewRequirement(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddRequirement())}
-                  />
-                  <button 
-                    className="btn btn-outline-primary" 
-                    type="button"
-                    onClick={handleAddRequirement}
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-              <div className="requirements-list">
-                {formData.requirements.map((req, index) => (
-                  <div key={index} className="alert alert-info d-flex justify-content-between align-items-center">
-                    <span>{req}</span>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      onClick={() => {
-                        const newReqs = [...formData.requirements];
-                        newReqs.splice(index, 1);
-                        setFormData({ ...formData, requirements: newReqs });
-                      }}
-                    ></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </form>
-        </div>
       </div>
+
+      {showGeneratedContent && (
+        <div className="card shadow mb-4">
+          <div className="card-header py-3">
+            <h6 className="m-0 font-weight-bold text-primary">Generated Job Description</h6>
+          </div>
+          <div className="card-body">
+            <h4>{formData.title}</h4>
+            {formData.company && <h5 className="text-muted">{formData.company}</h5>}
+            
+            <div className="mb-4">
+              <h5>Overview</h5>
+              <p>{formData.overview}</p>
+            </div>
+
+            <div className="mb-4">
+              <h5>Responsibilities</h5>
+              <ul>
+                {formData.responsibilities?.map((resp, index) => (
+                  <li key={index}>
+                    {typeof resp === 'string' 
+                      ? resp 
+                      : resp.description || 'No description provided'}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mb-4">
+              <h5>Qualifications</h5>
+              <ul>
+                {formData.qualifications?.map((qual, index) => (
+                  <li key={index}>
+                    {typeof qual === 'string' 
+                      ? qual 
+                      : qual.description || 'No description provided'}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="row mb-4">
+              <div className="col-md-6">
+                <h5>Required Skills</h5>
+                <div>
+                  {formData.required_skills?.map((skill, index) => (
+                    <span key={index} className="badge bg-primary me-2 mb-2">
+                      {typeof skill === 'string' ? skill : skill.description}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="col-md-6">
+                <h5>Preferred Skills</h5>
+                <div>
+                  {formData.preferred_skills?.map((skill, index) => (
+                    <span key={index} className="badge bg-secondary me-2 mb-2">
+                      {typeof skill === 'string' ? skill : skill.description}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h5>Benefits</h5>
+              <ul>
+                {formData.benefits?.map((benefit, index) => (
+                  <li key={index}>
+                    {typeof benefit === 'string' ? (
+                      benefit
+                    ) : (
+                      <>
+                        <strong>{benefit.title}</strong>
+                        {benefit.description && `: ${benefit.description}`}
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {formData.company_description && (
+              <div className="mb-4">
+                <h5>About the Company</h5>
+                <p>{formData.company_description}</p>
+              </div>
+            )}
+
+            {formData.culture_values && (
+              <div className="mb-4">
+                <h5>Culture & Values</h5>
+                <p>{formData.culture_values}</p>
+              </div>
+            )}
+
+            {formData.diversity_statement && (
+              <div className="mb-4">
+                <h5>Diversity & Inclusion</h5>
+                <p>{formData.diversity_statement}</p>
+              </div>
+            )}
+
+            <div className="text-center mt-4">
+              <button
+                className="btn btn-success btn-lg"
+                onClick={handlePublishJob}
+              >
+                <i className="fas fa-globe me-2"></i>
+                Publish Job
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default BootstrapJobCreationForm; 
+export default BootstrapJobCreationForm;

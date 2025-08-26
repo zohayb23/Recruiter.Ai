@@ -78,4 +78,4 @@ export interface Candidate {
   status: CandidateStatus;
   createdAt: string;
   updatedAt: string;
-} 
+}

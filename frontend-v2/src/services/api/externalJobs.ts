@@ -32,7 +32,7 @@ export interface SearchParams {
 
 export const searchExternalJobs = async (params: SearchParams): Promise<SearchResults> => {
   const response = await api.get('/external-jobs/search', { params });
-  return response.data;
+    return response.data;
 };
 
 export const getJobDetails = async (jobId: string): Promise<Job> => {
