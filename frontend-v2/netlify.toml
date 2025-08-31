@@ -1,0 +1,27 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://35.223.26.176/api/:splat"
+  status = 200
+  force = true
+  timeout = 60
+  headers = {Access-Control-Allow-Origin = "*"}
+
+# Specific timeout for resume parsing
+[[redirects]]
+  from = "/api/resume-parser/parse"
+  to = "http://35.223.26.176/api/resume-parser/parse"
+  status = 200
+  force = true
+  timeout = 120
+  headers = {Access-Control-Allow-Origin = "*"}
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"

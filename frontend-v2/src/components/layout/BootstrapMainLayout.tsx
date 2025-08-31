@@ -43,12 +43,7 @@ const BootstrapMainLayout = () => {
             </Link>
           </li>
 
-          <li className={`nav-item ${isActivePath('/jobs/description') ? 'active' : ''}`}>
-            <Link className="nav-link" to="/jobs/description/generate">
-              <i className="fas fa-fw fa-magic"></i>
-              <span>AI Job Description</span>
-            </Link>
-          </li>
+
 
           <li className={`nav-item ${isActivePath('/candidates') ? 'active' : ''}`}>
             <Link className="nav-link" to="/candidates">

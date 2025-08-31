@@ -15,7 +15,7 @@ import BootstrapMainLayout from './components/layout/BootstrapMainLayout';
 import AnalyticsPage from './components/analytics/AnalyticsPage';
 import BootstrapLoginPage from './components/auth/BootstrapLoginPage';
 import ExternalJobsPage from './pages/ExternalJobsPage';
-import JobDescriptionGenerator from './pages/JobDescriptionGenerator';
+
 import ResumeParserPage from './pages/ResumeParserPage';
 import BootstrapJobCreationForm from './components/jobs/BootstrapJobCreationForm';
 
@@ -43,7 +43,7 @@ function App() {
               <Route path="/jobs/:id/edit" element={<BootstrapJobCreationForm />} />
               <Route path="/jobs/:id/matches" element={<JobMatchingPage />} />
               <Route path="/jobs/external" element={<ExternalJobsPage />} />
-              <Route path="/jobs/description/generate" element={<JobDescriptionGenerator />} />
+      
               
               {/* Candidate Routes */}
               <Route path="/candidates" element={<CandidatesPage />} />

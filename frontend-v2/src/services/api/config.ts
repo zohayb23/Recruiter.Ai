@@ -1,5 +1,5 @@
 // API configuration
-export const API_BASE_URL = 'http://localhost:8804';
+export const API_BASE_URL = '';
 
 import axios from 'axios';
 
@@ -9,6 +9,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 60000, // 1 minute default timeout
 });
 
 // Add response interceptor for error handling

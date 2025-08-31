@@ -39,3 +39,5 @@ docx_resumes/*
 *.log
 local_settings.py
 db.sqlite3 
+# Local Netlify folder
+.netlify

@@ -148,7 +148,7 @@ export const getJobDescription = async (id: string): Promise<JobDescriptionRespo
 };
 
 export const getJobDescriptions = async (): Promise<JobDescriptionResponse[]> => {
-  const response = await api.get<JobDescriptionResponse[]>('/api/job-descriptions');
+  const response = await api.get<JobDescriptionResponse[]>('/api/job-descriptions/drafts');
   return response.data;
 };
 

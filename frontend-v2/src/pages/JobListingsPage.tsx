@@ -40,6 +40,28 @@ const JobListingsPage: React.FC = () => {
     return `${Math.floor(days / 365)} years ago`;
   };
 
+  const extractCompanyName = (companyDescription: string) => {
+    // Extract company name from company description
+    // Look for common patterns like "At [Company], we..." or "[Company] is..."
+    const patterns = [
+      /At\s+([A-Z][a-zA-Z\s&]+?)(?:,|\s+we)/i,
+      /^([A-Z][a-zA-Z\s&]+?)\s+is/i,
+      /^([A-Z][a-zA-Z\s&]+?)\s+has/i,
+      /^([A-Z][a-zA-Z\s&]+?)\s+provides/i
+    ];
+    
+    for (const pattern of patterns) {
+      const match = companyDescription.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+    
+    // Fallback: take first few words
+    const words = companyDescription.split(' ').slice(0, 3);
+    return words.join(' ') + (words.length === 3 ? '...' : '');
+  };
+
   return (
     <div className="container-fluid">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -78,6 +100,7 @@ const JobListingsPage: React.FC = () => {
                 <thead>
                   <tr>
                     <th>Title</th>
+                    <th>Company</th>
                     <th>Department</th>
                     <th>Location</th>
                     <th>Posted</th>
@@ -92,10 +115,10 @@ const JobListingsPage: React.FC = () => {
                         <a href={`/jobs/${job.id}`} className="text-primary fw-bold">
                           {job.title}
                         </a>
-                        <div className="small text-muted">{job.company}</div>
                       </td>
+                      <td>{job.company || (job.company_description ? extractCompanyName(job.company_description) : '-')}</td>
                       <td>{job.department || '-'}</td>
-                      <td>Remote</td>
+                      <td>{job.location || 'Remote'}</td>
                       <td>{formatDate(job.created_at.toString())}</td>
                       <td>
                         <span className="badge bg-success">PUBLISHED</span>

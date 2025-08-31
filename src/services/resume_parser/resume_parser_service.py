@@ -40,12 +40,12 @@ class ResumeParserService:
         # Load existing cache from disk
         for cache_file in os.listdir(self.cache_dir):
             if cache_file.endswith('.json'):
-                with open(os.path.join(self.cache_dir, cache_file), 'r') as f:
-                    try:
+                try:
+                    with open(os.path.join(self.cache_dir, cache_file), 'r') as f:
                         cache_data = json.load(f)
                         self.cache[cache_file[:-5]] = cache_data  # Remove .json extension
-                    except:
-                        continue
+                except:
+                    continue
 
     def _get_cache_key(self, file_content: bytes, file_name: str) -> str:
         """Generate a unique cache key for a file"""

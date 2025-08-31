@@ -54,7 +54,13 @@ const ResumeParserPage = () => {
       setParsedData(data);
     } catch (err: any) {
       console.error('Resume parsing error:', err);
-      setError(err.response?.data?.detail || err.response?.data?.message || 'Error parsing resume');
+      
+      // Show more helpful error messages
+      if (err.message?.includes('check the candidates page')) {
+        setError('Resume parsing completed successfully! Please check the Candidates page to view the parsed resume.');
+      } else {
+        setError(err.response?.data?.detail || err.response?.data?.message || err.message || 'Error parsing resume');
+      }
     } finally {
       setLoading(false);
     }
@@ -112,7 +118,7 @@ const ResumeParserPage = () => {
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <UploadIcon />}
               >
-                {loading ? 'Parsing...' : 'Parse Resume'}
+                {loading ? 'Parsing Resume...' : 'Parse Resume'}
               </Button>
             )}
           </Box>
@@ -120,6 +126,12 @@ const ResumeParserPage = () => {
           {error && (
             <Alert severity="error" sx={{ mt: 2 }}>
               {error}
+            </Alert>
+          )}
+          
+          {loading && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              Resume parsing in progress... This may take a few moments. The system will automatically detect when your resume is ready.
             </Alert>
           )}
         </Box>

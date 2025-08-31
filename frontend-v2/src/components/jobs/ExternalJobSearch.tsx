@@ -1,205 +1,64 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Container,
   Row,
   Col,
-  Form,
-  Button,
   Card
 } from 'react-bootstrap';
-import { searchExternalJobs } from '../../services/api/externalJobs';
-
-interface Job {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  description: string;
-  salary_min?: number;
-  salary_max?: number;
-  redirect_url: string;
-  created: string;
-}
-
-interface SearchResults {
-  total_results: number;
-  page: number;
-  results_per_page: number;
-  jobs: Job[];
-}
 
 const ExternalJobSearch: React.FC = () => {
-  // Search Parameters State
-  const [searchParams, setSearchParams] = useState({
-    query: '',
-    location: '',
-    full_time: false,
-    part_time: false,
-    contract: false,
-    permanent: false,
-    page: 1,
-    results_per_page: 10
-  });
-
-  // Results State
-  const [searchResults, setSearchResults] = useState<SearchResults>({
-    total_results: 0,
-    page: 1,
-    results_per_page: 10,
-    jobs: []
-  });
-
-  // Loading State
-  const [isLoading, setIsLoading] = useState(false);
-  // Error State
-  const [error, setError] = useState<string | null>(null);
-
-  // Handle Input Changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setSearchParams(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
-  // Handle Search
-  const handleSearch = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const results = await searchExternalJobs(searchParams);
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Error searching jobs:', error);
-      setError('Failed to fetch jobs. Please try again.');
-    }
-    setIsLoading(false);
-  };
-
   return (
     <Container fluid className="py-4">
-      <Row>
-        {/* Filters Column */}
-        <Col md={3}>
-          <Card className="mb-4">
-            <Card.Header>Search Filters</Card.Header>
-            <Card.Body>
-              <Form>
-                {/* Basic Search */}
-                <Form.Group className="mb-3">
-                  <Form.Label>Keywords</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="query"
-                    value={searchParams.query}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Software Engineer"
-                  />
-                </Form.Group>
+      <Row className="justify-content-center">
+        <Col md={8} lg={6}>
+          <Card className="text-center shadow-lg border-0">
+            <Card.Body className="py-5">
+              <div className="mb-4">
+                <i className="fas fa-search fa-4x text-primary mb-3"></i>
+                <h2 className="text-primary mb-3">Coming Soon!</h2>
+                <h4 className="text-muted mb-4">External Job Search</h4>
+              </div>
+              
+              <div className="mb-4">
+                <p className="lead text-muted mb-3">
+                  We're working on integrating with major job platforms to bring you the best opportunities.
+                </p>
+                <p className="text-muted">
+                  Soon you'll be able to search jobs from:
+                </p>
+              </div>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Location</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="location"
-                    value={searchParams.location}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Austin, TX"
-                  />
-                </Form.Group>
-
-                {/* Employment Type */}
-                <Form.Group className="mb-3">
-                  <Form.Label>Employment Type</Form.Label>
-                  <div>
-                    <Form.Check
-                      type="checkbox"
-                      label="Full Time"
-                      name="full_time"
-                      checked={searchParams.full_time}
-                      onChange={handleInputChange}
-                    />
-                    <Form.Check
-                      type="checkbox"
-                      label="Part Time"
-                      name="part_time"
-                      checked={searchParams.part_time}
-                      onChange={handleInputChange}
-                    />
-                    <Form.Check
-                      type="checkbox"
-                      label="Contract"
-                      name="contract"
-                      checked={searchParams.contract}
-                      onChange={handleInputChange}
-                    />
-                    <Form.Check
-                      type="checkbox"
-                      label="Permanent"
-                      name="permanent"
-                      checked={searchParams.permanent}
-                      onChange={handleInputChange}
-                    />
+              <div className="row mb-4">
+                <div className="col-md-4 mb-3">
+                  <div className="p-3 border rounded">
+                    <i className="fab fa-linkedin fa-2x text-primary mb-2"></i>
+                    <h6>LinkedIn</h6>
                   </div>
-                </Form.Group>
-
-                <Button
-                  variant="primary"
-                  onClick={handleSearch}
-                  disabled={isLoading}
-                  className="w-100"
-                >
-                  {isLoading ? 'Searching...' : 'Search Jobs'}
-                </Button>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        {/* Results Column */}
-        <Col md={9}>
-          <Card>
-            <Card.Header>
-              Found {searchResults.total_results} Jobs
-            </Card.Header>
-            <Card.Body>
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  {error}
                 </div>
-              )}
-              {searchResults.jobs.map((job: Job) => (
-                <Card key={job.id} className="mb-3">
-                  <Card.Body>
-                    <Card.Title>{job.title}</Card.Title>
-                    <Card.Subtitle className="mb-2 text-muted">
-                      {job.company}
-                    </Card.Subtitle>
-                    <Card.Text>
-                      <i className="fas fa-map-marker-alt me-2"></i>
-                      {job.location}
-                      {job.salary_min && job.salary_max && (
-                        <div className="text-success">
-                          <i className="fas fa-money-bill me-2"></i>
-                          ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}
-                        </div>
-                      )}
-                    </Card.Text>
-                    <Card.Text>{job.description}</Card.Text>
-                    <Button
-                      variant="outline-primary"
-                      href={job.redirect_url}
-                      target="_blank"
-                    >
-                      Apply Now
-                    </Button>
-                  </Card.Body>
-                  <Card.Footer className="text-muted">
-                    Posted: {new Date(job.created).toLocaleDateString()}
-                  </Card.Footer>
-                </Card>
-              ))}
+                <div className="col-md-4 mb-3">
+                  <div className="p-3 border rounded">
+                    <i className="fas fa-monster fa-2x text-primary mb-2"></i>
+                    <h6>Monster</h6>
+                  </div>
+                </div>
+                <div className="col-md-4 mb-3">
+                  <div className="p-3 border rounded">
+                    <i className="fas fa-search fa-2x text-primary mb-2"></i>
+                    <h6>Indeed</h6>
+                  </div>
+                </div>
+              </div>
+
+              <div className="alert alert-info">
+                <i className="fas fa-info-circle me-2"></i>
+                <strong>Stay tuned!</strong> We're actively working on API integrations to provide you with comprehensive job search capabilities.
+              </div>
+
+              <div className="mt-4">
+                <small className="text-muted">
+                  In the meantime, you can still create and manage your own job postings in the Jobs section.
+                </small>
+              </div>
             </Card.Body>
           </Card>
         </Col>
