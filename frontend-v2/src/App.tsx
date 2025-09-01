@@ -18,6 +18,8 @@ import ExternalJobsPage from './pages/ExternalJobsPage';
 
 import ResumeParserPage from './pages/ResumeParserPage';
 import BootstrapJobCreationForm from './components/jobs/BootstrapJobCreationForm';
+import KeywordGeneratorPage from './pages/KeywordGeneratorPage';
+import EnhancedSearchPage from './pages/EnhancedSearchPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -52,6 +54,10 @@ function App() {
               
               {/* Resume Parser Route */}
               <Route path="/resume-parser" element={<ResumeParserPage />} />
+              
+              {/* Search Utils Routes */}
+              <Route path="/keyword-generator" element={<KeywordGeneratorPage />} />
+              <Route path="/enhanced-search" element={<EnhancedSearchPage />} />
               
               {/* Analytics Route */}
               <Route path="/analytics" element={<AnalyticsPage />} />

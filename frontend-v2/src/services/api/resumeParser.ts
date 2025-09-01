@@ -65,9 +65,9 @@ export const parseResume = async (file: File): Promise<ParsedResume> => {
         // Start the parsing process (this will timeout but backend will continue)
         try {
           await api.post('/api/resume-parser/parse', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
             timeout: 10000, // Short timeout to just trigger the backend
           });
         } catch (triggerError) {

@@ -30,11 +30,13 @@ try:
     from .routers.resume_parser import router as resume_parser_router
     from .routers.job_description import router as job_description_router
     from .routers.matching import router as matching_router
+    from .routers.search_utils import router as search_utils_router
 except ImportError:
     # Fall back to absolute imports (for when running from project root)
     from src.routers.resume_parser import router as resume_parser_router
     from src.routers.job_description import router as job_description_router
     from src.routers.matching import router as matching_router
+    from src.routers.search_utils import router as search_utils_router
 
 app = FastAPI(title="Recruiter.AI Backend")
 
@@ -54,11 +56,14 @@ for route in job_description_router.routes:
     print(f"Job Description: {route.path}")
 for route in matching_router.routes:
     print(f"Matching: {route.path}")
+for route in search_utils_router.routes:
+    print(f"Search Utils: {route.path}")
 
 # Include routers with /api prefix
 app.include_router(resume_parser_router, prefix="/api")
 app.include_router(job_description_router, prefix="/api")
 app.include_router(matching_router, prefix="/api")
+app.include_router(search_utils_router, prefix="/api")
 
 @app.get("/")
 async def root():

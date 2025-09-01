@@ -58,7 +58,7 @@ const ExternalJobSearch: React.FC = () => {
                 <small className="text-muted">
                   In the meantime, you can still create and manage your own job postings in the Jobs section.
                 </small>
-              </div>
+                        </div>
             </Card.Body>
           </Card>
         </Col>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import '../auth/bootstrap-styles.css';
+import EnvironmentStatus from '../dev/EnvironmentStatus';
 
 const BootstrapMainLayout = () => {
   const location = useLocation();
@@ -56,6 +57,20 @@ const BootstrapMainLayout = () => {
             <Link className="nav-link" to="/resume-parser">
               <i className="fas fa-fw fa-file-alt"></i>
               <span>Resume Parser</span>
+            </Link>
+          </li>
+
+          <li className={`nav-item ${isActivePath('/keyword-generator') ? 'active' : ''}`}>
+            <Link className="nav-link" to="/keyword-generator">
+              <i className="fas fa-fw fa-magic"></i>
+              <span>Keyword Generator</span>
+            </Link>
+          </li>
+
+          <li className={`nav-item ${isActivePath('/enhanced-search') ? 'active' : ''}`}>
+            <Link className="nav-link" to="/enhanced-search">
+              <i className="fas fa-fw fa-filter"></i>
+              <span>Enhanced Search</span>
             </Link>
           </li>
 
@@ -134,6 +149,7 @@ const BootstrapMainLayout = () => {
 
             {/* Begin Page Content */}
             <div className="container-fluid">
+              <EnvironmentStatus />
               <Outlet />
             </div>
           </div>

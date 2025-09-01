@@ -1,5 +1,7 @@
-// API configuration
-export const API_BASE_URL = '';
+import { ENV } from '../../config/environment';
+
+// Smart API configuration that automatically detects environment
+export const API_BASE_URL = ENV.getApiBaseUrl();
 
 import axios from 'axios';
 
@@ -30,3 +32,10 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Log the current API configuration for debugging
+console.log('🌐 API Configuration:', {
+  environment: ENV.isDevelopment() ? 'Development' : 'Production',
+  baseURL: API_BASE_URL,
+  fullURL: window.location.href
+});

@@ -30,13 +30,73 @@ async def get_stored_resumes():
         # Format the resumes in a cleaner way
         formatted_resumes = []
         for resume in raw_resumes:
-            # Parse skills into a list
-            skills = resume.get('skills', '').split(', ') if resume.get('skills') else []
-            skills = [skill.strip() for skill in skills if skill.strip()]
+            # Parse skills into a list - handle any data type safely
+            skills = resume.get('skills', [])
+            if isinstance(skills, str):
+                skills = skills.split(', ') if skills else []
+            elif not isinstance(skills, list):
+                skills = []
             
-            # Parse education into a list
-            education = resume.get('education', '').split('|') if resume.get('education') else []
-            education = [edu.strip() for edu in education if edu.strip()]
+            # Clean and extract skill names from any data type
+            cleaned_skills = []
+            for skill in skills:
+                if skill:
+                    try:
+                        if isinstance(skill, str):
+                            # Handle string representations like "{'name': 'Python', 'category': 'programming_languages'}"
+                            if skill.startswith('{') and skill.endswith('}'):
+                                try:
+                                    # Extract just the skill name from the string representation
+                                    import ast
+                                    skill_dict = ast.literal_eval(skill)
+                                    skill_name = skill_dict.get('name', skill.strip())
+                                    cleaned_skills.append(str(skill_name).strip())
+                                except:
+                                    # Fallback: just use the cleaned string
+                                    cleaned_skills.append(skill.strip())
+                            else:
+                                cleaned_skills.append(skill.strip())
+                        elif isinstance(skill, dict):
+                            # Handle actual dictionary objects
+                            skill_name = skill.get('name', str(skill))
+                            cleaned_skills.append(str(skill_name).strip())
+                        else:
+                            # Handle any other type by converting to string
+                            cleaned_skills.append(str(skill).strip())
+                    except Exception as e:
+                        # If anything goes wrong, just skip this skill
+                        print(f"Warning: Could not process skill {skill}: {e}")
+                        continue
+            
+            # Parse education into a list - handle any data type safely
+            education = resume.get('education', [])
+            if isinstance(education, str):
+                education = education.split('|') if education else []
+            elif not isinstance(education, list):
+                education = []
+            
+            # Clean education entries safely
+            cleaned_education = []
+            for edu in education:
+                if edu:
+                    try:
+                        if isinstance(edu, dict):
+                            # Handle dictionary format
+                            degree = edu.get('degree', '')
+                            institution = edu.get('institution', '')
+                            if degree and institution:
+                                cleaned_education.append(f"{degree} at {institution}")
+                            elif degree:
+                                cleaned_education.append(str(degree))
+                            elif institution:
+                                cleaned_education.append(str(institution))
+                        else:
+                            # Handle any other type by converting to string
+                            cleaned_education.append(str(edu).strip())
+                    except Exception as e:
+                        # If anything goes wrong, just skip this education entry
+                        print(f"Warning: Could not process education {edu}: {e}")
+                        continue
             
             # Format created_at date
             created_at = resume.get('created_at', '')
@@ -58,12 +118,12 @@ async def get_stored_resumes():
                     "years_of_experience": resume.get('experience_years', 0)
                 },
                 "skills": {
-                    "total_count": len(skills),
-                    "list": skills
+                    "total_count": len(cleaned_skills),
+                    "list": cleaned_skills
                 },
                 "education": {
-                    "total_count": len(education),
-                    "list": education
+                    "total_count": len(cleaned_education),
+                    "list": cleaned_education
                 },
                 "metadata": {
                     "resume_id": resume.get('resume_id', ''),

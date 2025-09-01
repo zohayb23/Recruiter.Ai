@@ -4,7 +4,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "http://35.223.26.176/api/:splat"
+  to = "http://35.223.26.176:8804/api/:splat"
   status = 200
   force = true
   timeout = 60
@@ -13,7 +13,7 @@
 # Specific timeout for resume parsing
 [[redirects]]
   from = "/api/resume-parser/parse"
-  to = "http://35.223.26.176/api/resume-parser/parse"
+  to = "http://35.223.26.176:8804/api/resume-parser/parse"
   status = 200
   force = true
   timeout = 120

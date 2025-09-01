@@ -2,6 +2,14 @@
 
 Recruiter.AI is an intelligent recruitment platform that leverages AI to streamline the hiring process. It combines resume parsing, job description generation, and candidate matching capabilities to help recruiters find the best candidates efficiently.
 
+## 🌟 **NEW: Cloud Deployment Available!**
+- **🌐 Production Frontend**: Deployed on Netlify with HTTPS
+- **☁️ Production Backend**: Deployed on Google Cloud Platform (GCP) VM
+- **🔄 Hybrid Setup**: Maintains local development while providing cloud access
+- **📱 Access Anywhere**: Use the application from any device, anywhere
+- **🔗 Smart Proxy**: Netlify automatically routes API calls to cloud backend
+- **⚡ Production Ready**: Full backend connectivity with 16 resumes and 4 job descriptions
+
 ## 🚀 Features
 
 ### Working Features
@@ -9,10 +17,12 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 #### Job Management
 - ✅ AI-powered job description generation from minimal input
 - ✅ Support for multiple job types (Remote/In-Person/Hybrid)
-- ✅ Job listing page with status tracking
+- ✅ Job listing page with status tracking and company name display
 - ✅ Job detail view with formatted sections
 - ✅ Job publishing workflow
 - ✅ Job status management (Draft/Published)
+- ✅ Intelligent company name extraction from job descriptions
+- ✅ **NEW**: Company and location display in job listings table
 
 #### Resume Processing
 - ✅ Resume parsing from multiple formats (PDF, DOCX, DOC, TXT, RTF)
@@ -32,12 +42,37 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 - ✅ Sentence transformer embeddings for semantic search
 - ✅ Intelligent categorization validation to prevent misclassification
 - ✅ Local model caching for improved startup performance
+- ✅ **NEW**: Robust skills parsing for complex data structures
 
 #### Candidate Management
-- ✅ Candidate listing page
-- ✅ Basic candidate search
+- ✅ Candidate listing page with real-time data
+- ✅ Basic candidate search functionality
 - ✅ Candidate information display
-- ✅ Resume data persistence
+- ✅ Resume data persistence in Milvus
+- ✅ **NEW**: Automatic candidate data population from backend
+- ✅ **NEW**: Skills and education display from parsed resumes
+
+#### **NEW: Advanced Search & Analytics**
+- ✅ **Keyword Generator**: Create boolean search queries for job searches
+  - Job title-based keyword generation
+  - Required and preferred skills integration
+  - Experience level and industry targeting
+  - Search suggestions and optimization tips
+- ✅ **Enhanced Search**: Categorize results by skill, location, and experience
+  - Multi-dimensional filtering system
+  - Skill-based categorization
+  - Location-based grouping
+  - Experience level filtering
+  - Interactive filter toggles
+  - Real-time result counting
+
+#### **NEW: Cloud Infrastructure**
+- ✅ **GCP VM Deployment**: Backend running on Google Cloud Platform
+- ✅ **Netlify Frontend**: Production frontend with automatic deployments
+- ✅ **Smart Environment Detection**: Automatic dev/prod switching
+- ✅ **API Proxy**: Seamless backend connectivity through Netlify
+- ✅ **Production Database**: 16 resumes and 4 job descriptions live
+- ✅ **Service Management**: Systemd service with automatic restarts
 
 ### Features in Development
 
@@ -54,13 +89,6 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 - 🔄 Skills matrix with proficiency levels
 - 🔄 Candidate status tracking
 - 🔄 Document management system
-
-#### Cloud Deployment (GCP)
-- 🔄 Cloud Run service configuration
-- 🔄 Managed database setup
-- 🔄 Milvus cloud deployment
-- 🔄 CI/CD pipeline
-- 🔄 Monitoring and logging
 
 #### AI Recruitment Assistant
 - 🔄 Intelligent chatbot integration
@@ -106,6 +134,12 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 ### Database
 - Milvus (Vector Database)
 
+### Cloud Infrastructure
+- **Google Cloud Platform**: VM hosting for backend
+- **Netlify**: Frontend hosting with automatic deployments
+- **Nginx**: Reverse proxy on GCP VM
+- **Systemd**: Service management for backend
+
 ## 📋 Prerequisites
 
 Before you begin, ensure you have the following installed:
@@ -113,29 +147,30 @@ Before you begin, ensure you have the following installed:
 - Python (3.9 or higher)
 - Docker & Docker Compose
 - Git
+- Google Cloud CLI (for cloud deployment)
 
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository
-\`\`\`bash
+```bash
 git clone https://github.com/yourusername/Recruiter.AI.git
 cd Recruiter.AI
-\`\`\`
+```
 
 ### 2. Backend Setup
 
 #### Install Python Dependencies
-\`\`\`bash
+```bash
 cd backend-full
 python -m venv venv
 source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
-\`\`\`
+```
 
 #### Environment Variables
 Create a `.env` file in the `backend-full` directory:
-\`\`\`env
+```env
 # OpenAI Configuration (required for resume parsing and job description generation)
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4-1106-preview  # Required for JSON response format
@@ -147,47 +182,72 @@ MILVUS_PORT=19530
 # Optional Performance Tuning
 CACHE_ENABLED=true  # Enable/disable resume parsing cache
 SUPPRESS_HF_WARNINGS=true  # Suppress Hugging Face warnings during startup
-\`\`\`
+```
 
 #### Start Milvus
-\`\`\`bash
+```bash
 docker-compose up -d
-\`\`\`
+```
 
 #### Run Backend Server
-\`\`\`bash
+```bash
 uvicorn src.main:app --reload --port 8804
-\`\`\`
+```
 
 ### 3. Frontend Setup
 
 #### Install Dependencies
-\`\`\`bash
+```bash
 cd frontend-v2
 npm install
-\`\`\`
+```
 
 #### Environment Variables
 Create a `.env` file in the `frontend-v2` directory:
-\`\`\`env
+```env
 VITE_API_BASE_URL=http://localhost:8804
-\`\`\`
+```
 
 #### Run Development Server
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
 The application will be available at `http://localhost:5173`
 
+## ☁️ Cloud Deployment
+
+### Production Access
+- **Frontend**: https://playful-biscuit-e5d6e1-recruiter-ai.netlify.app
+- **Backend**: http://35.223.26.176:8804 (via Netlify proxy)
+
+### View Cloud Backend Logs
+```bash
+gcloud compute ssh recruiter-ai-vm --zone=us-central1-a --command="sudo journalctl -u recruiter-ai.service -f --no-pager"
+```
+
+### Backend Service Management
+```bash
+# Check service status
+gcloud compute ssh recruiter-ai-vm --zone=us-central1-a --command="sudo systemctl status recruiter-ai.service"
+
+# Restart service
+gcloud compute ssh recruiter-ai-vm --zone=us-central1-a --command="sudo systemctl restart recruiter-ai.service"
+
+# View real-time logs
+gcloud compute ssh recruiter-ai-vm --zone=us-central1-a --command="sudo journalctl -u recruiter-ai.service -f"
+```
+
 ## 📁 Project Structure
 
-\`\`\`
+```
 Recruiter.AI/
 ├── backend-full/                # Backend application
 │   ├── src/
 │   │   ├── main.py             # FastAPI application entry
 │   │   ├── routers/            # API route handlers
+│   │   │   ├── search_utils.py # NEW: Keyword generator & enhanced search
+│   │   │   └── resume_parser.py # Enhanced resume processing
 │   │   └── services/           # Business logic
 │   │       ├── resume_parser/  # Resume parsing services
 │   │       └── vector_store/   # Milvus integration
@@ -196,11 +256,14 @@ Recruiter.AI/
 │   ├── src/
 │   │   ├── components/         # React components
 │   │   ├── pages/             # Page components
+│   │   │   ├── KeywordGeneratorPage.tsx # NEW: Keyword generator
+│   │   │   └── EnhancedSearchPage.tsx   # NEW: Enhanced search
 │   │   ├── services/          # API services
 │   │   └── contexts/          # React contexts
+│   ├── netlify.toml           # Netlify configuration
 │   └── package.json           # Node.js dependencies
 └── docker-compose.yml         # Docker services config
-\`\`\`
+```
 
 ## 🔑 API Keys Required
 - OpenAI API Key (for resume parsing and job description generation)
@@ -208,16 +271,16 @@ Recruiter.AI/
 ## 🧪 Testing
 
 ### Backend Tests
-\`\`\`bash
+```bash
 cd backend-full
 pytest
-\`\`\`
+```
 
 ### Frontend Tests
-\`\`\`bash
+```bash
 cd frontend-v2
 npm test
-\`\`\`
+```
 
 ## 🚨 Common Issues & Solutions
 
@@ -251,12 +314,20 @@ npm test
    - Ensure Python path includes project root
    - Check for correct relative vs absolute imports
 
+6. **Cloud Deployment Issues**
+   - Verify backend service is running: `sudo systemctl status recruiter-ai.service`
+   - Check backend logs for errors: `sudo journalctl -u recruiter-ai.service -f`
+   - Ensure `netlify.toml` is included in deployment
+   - Verify proxy rules point to correct backend port (8804)
+
 ## 📚 Additional Resources
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [React Documentation](https://react.dev/)
 - [Milvus Documentation](https://milvus.io/docs)
 - [OpenAI API Documentation](https://platform.openai.com/docs/api-reference)
+- [Netlify Documentation](https://docs.netlify.com/)
+- [Google Cloud Documentation](https://cloud.google.com/docs)
 
 ## 🤝 Contributing
 

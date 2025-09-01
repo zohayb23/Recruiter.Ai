@@ -16,8 +16,22 @@ const JobListingsPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await getJobDescriptions();
+      
+      // Ensure response is an array and handle different response formats
+      let jobsArray: JobDescriptionResponse[] = [];
+      
+      if (Array.isArray(response)) {
+        jobsArray = response;
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        // Handle case where response is wrapped in a data property
+        jobsArray = Array.isArray(response.data) ? response.data : [];
+      } else {
+        console.warn('Unexpected response format:', response);
+        jobsArray = [];
+      }
+      
       // Filter to only show published jobs
-      const publishedJobs = response.filter(job => job.status === 'published');
+      const publishedJobs = jobsArray.filter(job => job.status === 'published');
       setJobs(publishedJobs);
     } catch (err: any) {
       console.error('Error loading jobs:', err);
