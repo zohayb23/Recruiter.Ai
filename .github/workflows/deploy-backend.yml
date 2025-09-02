@@ -1,0 +1,89 @@
+name: Deploy Backend to GCP VM
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'backend-full/**', 'src/**', 'requirements.txt' ]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Backend to Production VM
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Deploy to GCP VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: 22
+          script: |
+            echo "🚀 Starting backend deployment..."
+            
+            # Navigate to project directory
+            cd /home/$USER/Recruiter.Ai
+            
+            # Pull latest changes
+            echo "📥 Pulling latest changes from GitHub..."
+            git pull origin main
+            
+            # Check if there are backend changes
+            if git diff --name-only HEAD~1 | grep -E "(backend-full/|src/|requirements.txt)"; then
+              echo "🔧 Backend changes detected, deploying..."
+              
+              # Activate virtual environment
+              source venv/bin/activate
+              
+              # Install/update dependencies if requirements.txt changed
+              if git diff --name-only HEAD~1 | grep "requirements.txt"; then
+                echo "📚 Updating Python dependencies..."
+                pip install -r requirements.txt
+              fi
+              
+              # Test if the code compiles
+              echo "🧪 Testing code compilation..."
+              if python -m py_compile src/main.py; then
+                echo "✅ Code compilation successful"
+                
+                # Restart the backend service
+                echo "🔄 Restarting backend service..."
+                sudo systemctl restart recruiter-ai
+                
+                # Wait a moment for service to start
+                sleep 5
+                
+                # Check service status
+                echo "📊 Checking service status..."
+                sudo systemctl status recruiter-ai --no-pager
+                
+                # Test if service is responding
+                echo "🧪 Testing service health..."
+                if curl -f http://localhost:8804/health > /dev/null 2>&1; then
+                  echo "✅ Backend deployment successful!"
+                  echo "🌐 Service is running on port 8804"
+                else
+                  echo "❌ Service health check failed"
+                  echo "📋 Recent logs:"
+                  sudo journalctl -u recruiter-ai --no-pager -n 20
+                  exit 1
+                fi
+              else
+                echo "❌ Code compilation failed"
+                exit 1
+              fi
+            else
+              echo "ℹ️ No backend changes detected, skipping deployment"
+            fi
+            
+            echo "🎉 Deployment process completed!"
+            
+      - name: Deployment Status
+        if: always()
+        run: |
+          echo "Backend deployment workflow completed"
+          echo "Check the logs above for deployment status"
