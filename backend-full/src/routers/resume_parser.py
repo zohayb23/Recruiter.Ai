@@ -9,6 +9,7 @@ except ImportError:
     from src.services.vector_store.milvus_service import milvus_service
 from typing import List, Dict, Any
 from datetime import datetime
+import asyncio
 
 router = APIRouter(prefix="/resume-parser", tags=["resume-parser"])
 
@@ -20,6 +21,71 @@ async def parse_resume(file: UploadFile = File(...)):
         return parsed_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/parse-bulk")
+async def parse_bulk_resumes(files: List[UploadFile] = File(...)):
+    """Parse multiple resume files and extract structured information"""
+    try:
+        if not files:
+            raise HTTPException(status_code=400, detail="No files provided")
+        
+        if len(files) > 50:  # Limit to 50 files at once
+            raise HTTPException(status_code=400, detail="Maximum 50 files allowed per batch")
+        
+        results = []
+        errors = []
+        
+        # Process files concurrently with a semaphore to limit concurrent operations
+        semaphore = asyncio.Semaphore(5)  # Process 5 files concurrently
+        
+        async def process_single_file(file: UploadFile):
+            async with semaphore:
+                try:
+                    parsed_data = await resume_parser_service.parse_resume(file)
+                    return {
+                        "filename": file.filename,
+                        "status": "success",
+                        "data": parsed_data
+                    }
+                except Exception as e:
+                    return {
+                        "filename": file.filename,
+                        "status": "error",
+                        "error": str(e)
+                    }
+        
+        # Process all files concurrently
+        tasks = [process_single_file(file) for file in files]
+        file_results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Process results
+        for i, result in enumerate(file_results):
+            if isinstance(result, Exception):
+                errors.append({
+                    "filename": files[i].filename if i < len(files) else "unknown",
+                    "status": "error",
+                    "error": str(result)
+                })
+            else:
+                if result["status"] == "success":
+                    results.append(result)
+                else:
+                    errors.append(result)
+        
+        return {
+            "total_files": len(files),
+            "successful_parses": len(results),
+            "failed_parses": len(errors),
+            "results": results,
+            "errors": errors,
+            "summary": {
+                "success_rate": f"{(len(results) / len(files) * 100):.1f}%",
+                "processed_at": datetime.now().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Bulk parsing error: {str(e)}")
 
 @router.get("/stored-resumes")
 async def get_stored_resumes():
@@ -89,7 +155,7 @@ async def get_stored_resumes():
                             elif degree:
                                 cleaned_education.append(str(degree))
                             elif institution:
-                                cleaned_education.append(str(institution))
+                                cleaned_education.append(str(edu))
                         else:
                             # Handle any other type by converting to string
                             cleaned_education.append(str(edu).strip())

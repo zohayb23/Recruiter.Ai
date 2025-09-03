@@ -30,6 +30,33 @@ export interface ResumeParseResponse {
   data?: ParsedResume;
 }
 
+export interface BulkResumeParseResponse {
+  total_files: number;
+  successful_parses: number;
+  failed_parses: number;
+  results: Array<{
+    filename: string;
+    status: 'success';
+    data: ParsedResume;
+  }>;
+  errors: Array<{
+    filename: string;
+    status: 'error';
+    error: string;
+  }>;
+  summary: {
+    success_rate: string;
+    processed_at: string;
+  };
+}
+
+export interface BulkParseProgress {
+  current: number;
+  total: number;
+  currentFile: string;
+  status: 'processing' | 'completed' | 'error';
+}
+
 export const parseResume = async (file: File): Promise<ParsedResume> => {
   const formData = new FormData();
   formData.append('file', file);
@@ -156,5 +183,80 @@ export const parseResume = async (file: File): Promise<ParsedResume> => {
     }
     
     throw new Error(error.response?.data?.detail || error.message || 'Failed to parse resume');
+  }
+};
+
+export const parseBulkResumes = async (
+  files: File[], 
+  onProgress?: (progress: BulkParseProgress) => void
+): Promise<BulkResumeParseResponse> => {
+  if (!files || files.length === 0) {
+    throw new Error('No files provided for bulk parsing');
+  }
+
+  if (files.length > 50) {
+    throw new Error('Maximum 50 files allowed per batch');
+  }
+
+  const formData = new FormData();
+  files.forEach(file => {
+    formData.append('files', file);
+  });
+
+  try {
+    console.log(`Starting bulk resume parse for ${files.length} files`);
+    
+    // Update progress
+    onProgress?.({
+      current: 0,
+      total: files.length,
+      currentFile: 'Starting bulk processing...',
+      status: 'processing'
+    });
+
+    const response = await api.post('/api/resume-parser/parse-bulk', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 300000, // 5 minutes timeout for bulk parsing
+    });
+
+    console.log('Bulk resume parse response:', response.data);
+    
+    // Update progress to completed
+    onProgress?.({
+      current: files.length,
+      total: files.length,
+      currentFile: 'Bulk processing completed',
+      status: 'completed'
+    });
+
+    return response.data as BulkResumeParseResponse;
+    
+  } catch (error: any) {
+    console.error('Bulk resume parsing error:', error);
+    
+    // Update progress to error
+    onProgress?.({
+      current: 0,
+      total: files.length,
+      currentFile: 'Bulk processing failed',
+      status: 'error'
+    });
+
+    // Handle specific error cases
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      throw new Error('Bulk resume parsing is taking longer than expected. Please wait a moment and try again.');
+    }
+    
+    if (error.response?.status === 400) {
+      throw new Error(error.response.data?.detail || 'Invalid request for bulk parsing');
+    }
+    
+    if (error.response?.status === 500) {
+      throw new Error('Server error during bulk parsing. Please try again later.');
+    }
+    
+    throw new Error(error.response?.data?.detail || error.message || 'Failed to parse bulk resumes');
   }
 };

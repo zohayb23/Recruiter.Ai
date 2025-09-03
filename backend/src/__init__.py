@@ -1,3 +1,0 @@
-"""
-Recruiter.AI Backend Package
-""" 
