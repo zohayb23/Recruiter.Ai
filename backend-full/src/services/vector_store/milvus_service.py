@@ -42,6 +42,9 @@ class MilvusService:
             logger.info(f"Successfully connected to Milvus at {self.host}:{self.port}")
             if self.init_collection():
                 logger.info(f"Successfully connected to collection {self.collection_name}")
+        else:
+            logger.warning("Failed to connect to Milvus - running in offline mode")
+            self.is_connected = False
     
     def connect(self) -> bool:
         """Connect to Milvus server"""

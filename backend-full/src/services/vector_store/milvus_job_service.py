@@ -20,6 +20,7 @@ class MilvusJobService:
         self.collection_name = "job_descriptions"
         self.dim = 384  # Dimension for all-MiniLM-L6-v2
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.offline_mode = False
         self.init_collection()
 
     def init_collection(self):
@@ -37,6 +38,11 @@ class MilvusJobService:
                 collection = Collection(self.collection_name)
                 collection.load()
                 return
+        except Exception as e:
+            logger.warning(f"Failed to connect to Milvus: {e}")
+            logger.warning("Running in offline mode - vector operations will be disabled")
+            self.offline_mode = True
+            return
 
             # Define fields for the collection
             fields = [
