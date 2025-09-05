@@ -194,6 +194,54 @@ async def get_scored_jobs_for_candidate(
         logger.error(f"Error getting scored jobs for candidate {resume_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/debug/resume/{resume_id}")
+async def debug_resume_data(resume_id: str):
+    """Debug endpoint to check resume data extraction"""
+    try:
+        resume_data = await scoring_service.milvus_service.get_resume(resume_id)
+        if not resume_data:
+            return {"error": "Resume not found"}
+        
+        # Test text extraction
+        resume_text = scoring_service._extract_resume_text(resume_data)
+        resume_skills = scoring_service._extract_resume_skills(resume_data)
+        
+        return {
+            "resume_id": resume_id,
+            "resume_data_keys": list(resume_data.keys()),
+            "extracted_text_length": len(resume_text),
+            "extracted_text_preview": resume_text[:200] + "..." if len(resume_text) > 200 else resume_text,
+            "extracted_skills": resume_skills,
+            "skills_count": len(resume_skills)
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@router.get("/debug/job/{job_id}")
+async def debug_job_data(job_id: str):
+    """Debug endpoint to check job data extraction"""
+    try:
+        job_data = await scoring_service.milvus_job_service.get_job_description(job_id)
+        if not job_data:
+            return {"error": "Job not found"}
+        
+        # Test text extraction
+        job_text = scoring_service._extract_job_text(job_data)
+        required_skills = job_data.get('required_skills', [])
+        preferred_skills = job_data.get('preferred_skills', [])
+        
+        return {
+            "job_id": job_id,
+            "job_data_keys": list(job_data.keys()),
+            "extracted_text_length": len(job_text),
+            "extracted_text_preview": job_text[:200] + "..." if len(job_text) > 200 else job_text,
+            "required_skills": required_skills,
+            "preferred_skills": preferred_skills,
+            "total_skills": len(required_skills) + len(preferred_skills)
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
 @router.get("/health")
 async def health_check():
     """Health check for the candidate scoring service"""
