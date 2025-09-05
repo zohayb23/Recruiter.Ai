@@ -15,24 +15,28 @@ scoring_service = CandidateScoringService()
 
 @router.post("/score")
 async def score_candidate_against_job(
-    resume_id: str,
-    job_id: str
+    request: dict
 ):
     """
     Score a single candidate against a specific job description
     
     Args:
-        resume_id: ID of the resume to score
-        job_id: ID of the job description to score against
+        request: JSON body containing resume_id and job_id
         
     Returns:
         Detailed scoring breakdown with total score and recommendations
     """
     try:
+        resume_id = request.get('resume_id')
+        job_id = request.get('job_id')
+        
+        if not resume_id or not job_id:
+            raise HTTPException(status_code=400, detail="resume_id and job_id are required")
+        
         result = await scoring_service.score_candidate_against_job(resume_id, job_id)
         return result
     except Exception as e:
-        logger.error(f"Error scoring candidate {resume_id} against job {job_id}: {e}")
+        logger.error(f"Error scoring candidate: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/score-batch")
