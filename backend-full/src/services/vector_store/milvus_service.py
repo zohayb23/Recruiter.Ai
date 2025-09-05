@@ -239,4 +239,39 @@ class MilvusService:
             logger.error(f"Failed to list resumes: {e}")
             return []
 
+    async def get_resume(self, resume_id: str) -> Optional[Dict]:
+        """Get a specific resume by ID"""
+        try:
+            if not self.ensure_connection():
+                return None
+            
+            # Query specific resume
+            results = self.collection.query(
+                expr=f"resume_id == '{resume_id}'",
+                output_fields=["*"]
+            )
+            
+            if not results:
+                return None
+            
+            result = results[0]
+            
+            # Parse JSON strings back to objects
+            for field in ["skills", "education", "work_experience"]:
+                if field in result and isinstance(result[field], str):
+                    try:
+                        result[field] = json.loads(result[field])
+                    except:
+                        result[field] = []
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to get resume {resume_id}: {e}")
+            return None
+
+    async def get_all_resumes(self) -> List[Dict]:
+        """Get all resumes (async version of list_all_resumes)"""
+        return self.list_all_resumes()
+
 milvus_service = MilvusService()
