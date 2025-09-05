@@ -331,13 +331,43 @@ class CandidateScoringService:
                 matches += 1
                 continue
             
-            # Partial match (contains)
-            for resume_skill in resume_skills_lower:
-                if job_skill_lower in resume_skill or resume_skill in job_skill_lower:
-                    matches += 1
-                    break
+            # Extract key technology names from descriptive job skills
+            job_tech_keywords = self._extract_tech_keywords(job_skill_lower)
+            
+            # Check if any resume skill matches the extracted keywords
+            for keyword in job_tech_keywords:
+                for resume_skill in resume_skills_lower:
+                    if keyword in resume_skill or resume_skill in keyword:
+                        matches += 1
+                        break
+                else:
+                    continue
+                break  # Found a match, move to next job skill
         
         return matches
+    
+    def _extract_tech_keywords(self, job_skill: str) -> List[str]:
+        """Extract technology keywords from descriptive job skills"""
+        # Common technology keywords to look for
+        tech_keywords = [
+            'javascript', 'js', 'react', 'angular', 'vue', 'node', 'python', 'java', 'c#', 'c++', 'php',
+            'ruby', 'go', 'rust', 'swift', 'kotlin', 'typescript', 'html', 'css', 'sass', 'less',
+            'docker', 'kubernetes', 'aws', 'azure', 'gcp', 'terraform', 'ansible', 'jenkins', 'git',
+            'mysql', 'postgresql', 'mongodb', 'redis', 'elasticsearch', 'kafka', 'rabbitmq',
+            'linux', 'windows', 'macos', 'powershell', 'bash', 'shell', 'sql', 'nosql',
+            'rest', 'graphql', 'api', 'microservices', 'serverless', 'lambda', 'ec2', 's3',
+            'vmware', 'hyper-v', 'citrix', 'sccm', 'intune', 'active directory', 'ldap',
+            'jira', 'confluence', 'slack', 'teams', 'office 365', 'sharepoint'
+        ]
+        
+        found_keywords = []
+        job_skill_lower = job_skill.lower()
+        
+        for keyword in tech_keywords:
+            if keyword in job_skill_lower:
+                found_keywords.append(keyword)
+        
+        return found_keywords
     
     def _calculate_years_experience(self, resume_data: Dict) -> float:
         """Calculate total years of work experience"""
