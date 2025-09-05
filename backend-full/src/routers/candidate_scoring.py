@@ -8,7 +8,7 @@ from ..models.job_description import JobDescription
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/candidate-scoring", tags=["candidate-scoring"])
+router = APIRouter(prefix="/candidate-scoring", tags=["candidate-scoring"])
 
 # Initialize the scoring service
 scoring_service = CandidateScoringService()
