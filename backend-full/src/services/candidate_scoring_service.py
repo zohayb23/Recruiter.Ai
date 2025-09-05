@@ -230,30 +230,40 @@ class CandidateScoringService:
         
         # Add name
         if resume_data.get('full_name'):
-            text_parts.append(resume_data['full_name'])
+            text_parts.append(str(resume_data['full_name']))
         
         # Add work experience
         work_experience = resume_data.get('work_experience', [])
         for exp in work_experience:
             if isinstance(exp, dict):
-                text_parts.append(exp.get('title', ''))
-                text_parts.append(exp.get('company', ''))
-                text_parts.append(exp.get('description', ''))
+                text_parts.append(str(exp.get('title', '')))
+                text_parts.append(str(exp.get('company', '')))
+                description = exp.get('description', '')
+                if isinstance(description, list):
+                    text_parts.extend([str(item) for item in description])
+                else:
+                    text_parts.append(str(description))
                 if exp.get('technologies'):
-                    text_parts.extend(exp['technologies'])
+                    technologies = exp['technologies']
+                    if isinstance(technologies, list):
+                        text_parts.extend([str(tech) for tech in technologies])
+                    else:
+                        text_parts.append(str(technologies))
         
         # Add skills
         skills = resume_data.get('skills', [])
         for skill in skills:
             if isinstance(skill, dict):
-                text_parts.append(skill.get('name', ''))
+                text_parts.append(str(skill.get('name', '')))
+            elif isinstance(skill, str):
+                text_parts.append(skill)
         
         # Add education
         education = resume_data.get('education', [])
         for edu in education:
             if isinstance(edu, dict):
-                text_parts.append(edu.get('degree', ''))
-                text_parts.append(edu.get('institution', ''))
+                text_parts.append(str(edu.get('degree', '')))
+                text_parts.append(str(edu.get('institution', '')))
         
         return ' '.join(filter(None, text_parts))
     
@@ -262,25 +272,31 @@ class CandidateScoringService:
         text_parts = []
         
         # Add basic info
-        text_parts.append(job_data.get('title', ''))
-        text_parts.append(job_data.get('overview', ''))
-        text_parts.append(job_data.get('company_description', ''))
+        text_parts.append(str(job_data.get('title', '')))
+        text_parts.append(str(job_data.get('overview', '')))
+        text_parts.append(str(job_data.get('company_description', '')))
         
         # Add responsibilities
         responsibilities = job_data.get('responsibilities', [])
         for resp in responsibilities:
             if isinstance(resp, dict):
-                text_parts.append(resp.get('description', ''))
+                text_parts.append(str(resp.get('description', '')))
+            else:
+                text_parts.append(str(resp))
         
         # Add qualifications
         qualifications = job_data.get('qualifications', [])
         for qual in qualifications:
             if isinstance(qual, dict):
-                text_parts.append(qual.get('description', ''))
+                text_parts.append(str(qual.get('description', '')))
+            else:
+                text_parts.append(str(qual))
         
         # Add skills
-        text_parts.extend(job_data.get('required_skills', []))
-        text_parts.extend(job_data.get('preferred_skills', []))
+        required_skills = job_data.get('required_skills', [])
+        preferred_skills = job_data.get('preferred_skills', [])
+        text_parts.extend([str(skill) for skill in required_skills])
+        text_parts.extend([str(skill) for skill in preferred_skills])
         
         return ' '.join(filter(None, text_parts))
     
