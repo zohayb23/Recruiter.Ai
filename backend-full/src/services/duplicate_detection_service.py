@@ -23,10 +23,10 @@ class DuplicateDetectionService:
         # Detection thresholds
         self.thresholds = {
             'exact_match': 1.0,           # Exact matches
-            'fuzzy_name': 0.85,           # Fuzzy name matching
-            'fuzzy_contact': 0.90,        # Fuzzy contact matching
-            'semantic_similarity': 0.85,  # Semantic similarity
-            'composite_score': 0.80       # Overall composite score
+            'fuzzy_name': 0.80,           # Fuzzy name matching (lowered)
+            'fuzzy_contact': 0.85,        # Fuzzy contact matching (lowered)
+            'semantic_similarity': 0.75,  # Semantic similarity (lowered)
+            'composite_score': 0.70       # Overall composite score (lowered)
         }
         
         # Scoring weights
@@ -281,16 +281,46 @@ class DuplicateDetectionService:
             # Skills
             skills = resume.get('skills', {})
             if isinstance(skills, dict) and skills.get('list'):
-                text_parts.extend(skills['list'])
+                for skill in skills['list']:
+                    if isinstance(skill, str):
+                        text_parts.append(skill)
+                    elif isinstance(skill, dict) and skill.get('name'):
+                        text_parts.append(skill['name'])
             elif isinstance(skills, list):
-                text_parts.extend(skills)
+                for skill in skills:
+                    if isinstance(skill, str):
+                        text_parts.append(skill)
+                    elif isinstance(skill, dict) and skill.get('name'):
+                        text_parts.append(skill['name'])
             
             # Education
             education = resume.get('education', {})
             if isinstance(education, dict) and education.get('list'):
-                text_parts.extend(education['list'])
+                for edu in education['list']:
+                    if isinstance(edu, str):
+                        text_parts.append(edu)
+                    elif isinstance(edu, dict):
+                        # Extract education details
+                        parts = []
+                        if edu.get('degree'):
+                            parts.append(edu['degree'])
+                        if edu.get('institution'):
+                            parts.append(edu['institution'])
+                        if parts:
+                            text_parts.append(' '.join(parts))
             elif isinstance(education, list):
-                text_parts.extend(education)
+                for edu in education:
+                    if isinstance(edu, str):
+                        text_parts.append(edu)
+                    elif isinstance(edu, dict):
+                        # Extract education details
+                        parts = []
+                        if edu.get('degree'):
+                            parts.append(edu['degree'])
+                        if edu.get('institution'):
+                            parts.append(edu['institution'])
+                        if parts:
+                            text_parts.append(' '.join(parts))
             
             # Work experience
             work_exp = resume.get('work_experience', [])
@@ -345,9 +375,17 @@ class DuplicateDetectionService:
         
         skills_data = resume.get('skills', {})
         if isinstance(skills_data, dict) and skills_data.get('list'):
-            skills.update(skill.lower().strip() for skill in skills_data['list'])
+            for skill in skills_data['list']:
+                if isinstance(skill, str):
+                    skills.add(skill.lower().strip())
+                elif isinstance(skill, dict) and skill.get('name'):
+                    skills.add(skill['name'].lower().strip())
         elif isinstance(skills_data, list):
-            skills.update(skill.lower().strip() for skill in skills_data)
+            for skill in skills_data:
+                if isinstance(skill, str):
+                    skills.add(skill.lower().strip())
+                elif isinstance(skill, dict) and skill.get('name'):
+                    skills.add(skill['name'].lower().strip())
         
         return skills
     
@@ -357,9 +395,31 @@ class DuplicateDetectionService:
         
         education_data = resume.get('education', {})
         if isinstance(education_data, dict) and education_data.get('list'):
-            education.update(edu.lower().strip() for edu in education_data['list'])
+            for edu in education_data['list']:
+                if isinstance(edu, str):
+                    education.add(edu.lower().strip())
+                elif isinstance(edu, dict):
+                    # Extract education details
+                    parts = []
+                    if edu.get('degree'):
+                        parts.append(edu['degree'])
+                    if edu.get('institution'):
+                        parts.append(edu['institution'])
+                    if parts:
+                        education.add(' '.join(parts).lower().strip())
         elif isinstance(education_data, list):
-            education.update(edu.lower().strip() for edu in education_data)
+            for edu in education_data:
+                if isinstance(edu, str):
+                    education.add(edu.lower().strip())
+                elif isinstance(edu, dict):
+                    # Extract education details
+                    parts = []
+                    if edu.get('degree'):
+                        parts.append(edu['degree'])
+                    if edu.get('institution'):
+                        parts.append(edu['institution'])
+                    if parts:
+                        education.add(' '.join(parts).lower().strip())
         
         return education
     
