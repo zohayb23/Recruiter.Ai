@@ -204,13 +204,19 @@ class MilvusJobService:
             collection.load()  # Ensure collection is loaded
             
             # Prepare query
-            expr = f"status == '{status}'" if status else ""
-            
-            # Execute search
-            results = collection.query(
-                expr=expr,
-                output_fields=["*"]
-            )
+            if status:
+                expr = f"status == '{status}'"
+                results = collection.query(
+                    expr=expr,
+                    output_fields=["*"]
+                )
+            else:
+                # When no filter, get all records with a limit
+                results = collection.query(
+                    expr="status != ''",  # Simple expression to get all records
+                    output_fields=["*"],
+                    limit=1000  # Set a reasonable limit
+                )
             
             logger.info(f"Retrieved {len(results)} job descriptions")
             

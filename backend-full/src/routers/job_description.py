@@ -147,9 +147,9 @@ async def save_job_description(data: SaveJobDescriptionRequest):
 
 @router.get("/drafts", response_model=List[JobDescriptionResponse])
 async def get_draft_job_descriptions():
-    """Get all draft job descriptions"""
+    """Get all job descriptions"""
     try:
-        return await job_description_service.get_job_descriptions(status="draft")
+        return await job_description_service.list_job_descriptions()  # No status filter - get all jobs
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
