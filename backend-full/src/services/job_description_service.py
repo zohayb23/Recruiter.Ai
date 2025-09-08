@@ -126,11 +126,7 @@ class JobDescriptionService:
             jd = await milvus_job_service.get_job_description(jd_id)
             if not jd:
                 return None
-                
-            return JobDescriptionResponse(
-                job_description=jd,
-                message="Job description retrieved successfully"
-            )
+            return jd  # Return the job description data directly
         except Exception as e:
             logger.error(f"Error getting job description: {e}")
             raise
