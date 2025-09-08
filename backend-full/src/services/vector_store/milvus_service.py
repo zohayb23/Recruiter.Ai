@@ -274,4 +274,23 @@ class MilvusService:
         """Get all resumes (async version of list_all_resumes)"""
         return self.list_all_resumes()
 
+    async def delete_resume(self, resume_id: str) -> bool:
+        """Delete a resume by ID"""
+        try:
+            if not self.ensure_connection():
+                logger.error("Failed to connect to Milvus")
+                return False
+
+            # Create a query expression to find the resume by ID
+            expr = f'resume_id == "{resume_id}"'
+            
+            # Delete the resume
+            result = self.collection.delete(expr)
+            logger.info(f"Successfully deleted resume {resume_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to delete resume {resume_id}: {e}")
+            return False
+
 milvus_service = MilvusService()
