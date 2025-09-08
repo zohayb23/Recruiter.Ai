@@ -138,7 +138,7 @@ class JobDescriptionService:
     async def list_job_descriptions(self, status: Optional[str] = None) -> List[JobDescription]:
         """List all job descriptions, optionally filtered by status"""
         try:
-            return await milvus_job_service.list_job_descriptions(status)
+            return await milvus_job_service.get_job_descriptions(status)
         except Exception as e:
             logger.error(f"Error listing job descriptions: {e}")
             raise
