@@ -33,6 +33,7 @@ try:
     from .routers.search_utils import router as search_utils_router
     from .routers.candidate_scoring import router as candidate_scoring_router
     from .routers.duplicate_detection import router as duplicate_detection_router
+    from .routers.simple_duplicate_detection import router as simple_duplicate_detection_router
 except ImportError:
     # Fall back to absolute imports (for when running from project root)
     from src.routers.resume_parser import router as resume_parser_router
@@ -41,6 +42,7 @@ except ImportError:
     from src.routers.search_utils import router as search_utils_router
     from src.routers.candidate_scoring import router as candidate_scoring_router
     from src.routers.duplicate_detection import router as duplicate_detection_router
+    from src.routers.simple_duplicate_detection import router as simple_duplicate_detection_router
 
 app = FastAPI(title="Recruiter.AI Backend")
 
@@ -66,6 +68,8 @@ for route in candidate_scoring_router.routes:
     print(f"Candidate Scoring: {route.path}")
 for route in duplicate_detection_router.routes:
     print(f"Duplicate Detection: {route.path}")
+for route in simple_duplicate_detection_router.routes:
+    print(f"Simple Duplicate Detection: {route.path}")
 
 # Include routers with /api prefix
 app.include_router(resume_parser_router, prefix="/api")
@@ -74,6 +78,7 @@ app.include_router(matching_router, prefix="/api")
 app.include_router(search_utils_router, prefix="/api")
 app.include_router(candidate_scoring_router, prefix="/api")
 app.include_router(duplicate_detection_router, prefix="/api")
+app.include_router(simple_duplicate_detection_router, prefix="/api")
 
 @app.get("/")
 async def root():
