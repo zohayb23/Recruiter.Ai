@@ -24,8 +24,8 @@ export const ENV = {
   // Get the appropriate API base URL
   getApiBaseUrl: () => {
     if (ENV.isDevelopment()) {
-      // Development: use cloud backend directly on port 8804 (bypassing Nginx)
-      return 'http://35.223.26.176:8804';
+      // Development: use new GCP backend directly on port 8804
+      return 'http://34.121.146.153:8804';
     } else {
       // Production: use relative URLs for Netlify proxy
       return '';
@@ -35,10 +35,10 @@ export const ENV = {
   // Get the backend URL for direct access (useful for debugging)
   getBackendUrl: () => {
     if (ENV.isDevelopment()) {
-      // Development: use cloud backend directly
-      return 'http://35.223.26.176:8804';
+      // Development: use new GCP backend directly
+      return 'http://34.121.146.153:8804';
     } else {
-      return 'http://35.223.26.176';
+      return 'http://34.121.146.153';
     }
   },
 

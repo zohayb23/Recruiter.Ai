@@ -46,10 +46,24 @@ const BootstrapMainLayout = () => {
 
 
 
-          <li className={`nav-item ${isActivePath('/candidates') ? 'active' : ''}`}>
+          <li className={`nav-item ${isActivePath('/candidates') && !isActivePath('/candidates/scoring') ? 'active' : ''}`}>
             <Link className="nav-link" to="/candidates">
               <i className="fas fa-fw fa-users"></i>
               <span>Candidates</span>
+            </Link>
+          </li>
+
+          <li className={`nav-item ${isActivePath('/candidates/scoring') ? 'active' : ''}`}>
+            <Link className="nav-link" to="/candidates/scoring">
+              <i className="fas fa-fw fa-chart-line"></i>
+              <span>Candidate Scoring</span>
+            </Link>
+          </li>
+
+          <li className={`nav-item ${isActivePath('/duplicates') ? 'active' : ''}`}>
+            <Link className="nav-link" to="/duplicates">
+              <i className="fas fa-fw fa-copy"></i>
+              <span>Duplicate Detection</span>
             </Link>
           </li>
 

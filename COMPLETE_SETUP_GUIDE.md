@@ -72,7 +72,8 @@ npm run dev
 
 #### **Access & Configuration**
 - **Local Frontend**: http://localhost:5173
-- **Cloud Backend**: http://35.223.26.176:8804 (automatic)
+- **Company Cloud Backend**: http://34.121.146.153:8804 (automatic)
+- **Personal Milvus**: http://35.223.26.176:8000 (Attu Web UI)
 - **Production**: https://playful-biscuit-e5d6e1-recruiter-ai.netlify.app
 
 #### **How It Works**
@@ -130,8 +131,8 @@ Create `.env` in `backend-full/`:
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-4-1106-preview
 
-# Milvus Configuration
-MILVUS_HOST=localhost
+# Milvus Configuration (Company GCP Setup)
+MILVUS_HOST=35.223.26.176  # Personal GCP Milvus database
 MILVUS_PORT=19530
 
 # Performance Tuning
@@ -147,7 +148,7 @@ PORT=8804
 ### **Adding New Team Members**
 
 #### **Step 1: GCP IAM Access**
-1. Go to: https://console.cloud.google.com/iam-admin/iam?project=recruiter-ai-468020
+1. Go to: https://console.cloud.google.com/iam-admin/iam?project=TAQForce
 2. Click "GRANT ACCESS"
 3. Add teammate's email
 4. Assign role: `Compute Instance Admin (v1)`
@@ -196,9 +197,9 @@ git push origin main
 
 #### **Method 1: Direct SSH (Fastest - 2 min)**
 ```bash
-# Deploy directly to cloud VM
-ssh $USER@35.223.26.176
-cd /home/$USER/Recruiter.Ai
+# Deploy directly to company cloud VM
+gcloud compute ssh taqforce-recruiter-ai-vm --zone=us-central1-a
+cd /home/fayzanbhatti/Recruiter.Ai
 git pull origin main
 sudo systemctl restart recruiter-ai
 sudo systemctl status recruiter-ai
@@ -213,8 +214,8 @@ exit
 ./scripts/setup-automated-deployment.sh
 
 # Add GitHub secrets (Settings → Secrets → Actions):
-# VM_HOST: 35.223.26.176
-# VM_USERNAME: Your VM username
+# VM_HOST: 34.121.146.153
+# VM_USERNAME: fayzanbhatti
 # VM_SSH_KEY: Content of generated SSH key
 ```
 
@@ -262,10 +263,10 @@ git push origin main
 
 ```bash
 # Check backend health
-curl http://35.223.26.176:8804/health
+curl http://34.121.146.153:8804/health
 
 # View backend logs (if you have GCP access)
-gcloud compute ssh recruiter-ai-vm --zone=us-central1-a --command="sudo journalctl -u recruiter-ai.service -f"
+gcloud compute ssh taqforce-recruiter-ai-vm --zone=us-central1-a --command="sudo journalctl -u recruiter-ai.service -f"
 
 # Check environment
 # Browser console shows: 🚀 Environment Configuration
@@ -369,8 +370,8 @@ docker-compose down
 | Aspect | Local Development | Production |
 |--------|------------------|------------|
 | **Frontend** | localhost:5173 | Netlify |
-| **Backend** | localhost:8804 or cloud | Cloud VM (35.223.26.176:8804) |
-| **Database** | Empty local Milvus | 16 resumes, 4 jobs |
+| **Backend** | localhost:8804 or cloud | Cloud VM (34.121.146.153:8804) |
+| **Database** | Empty local Milvus | 14 resumes, 6 jobs (Personal Milvus) |
 | **API Keys** | Your OpenAI key | Team OpenAI key |
 | **Performance** | Fast local | Network latency |
 
@@ -428,9 +429,10 @@ docker ps
 ### **Access URLs**
 - **Local Frontend**: http://localhost:5173
 - **Local Backend**: http://localhost:8804
-- **Cloud Backend**: http://35.223.26.176:8804
+- **Company Cloud Backend**: http://34.121.146.153:8804
+- **Personal Milvus**: http://35.223.26.176:8000 (Attu Web UI)
 - **Production Frontend**: https://playful-biscuit-e5d6e1-recruiter-ai.netlify.app
-- **API Docs**: http://localhost:8804/docs or http://35.223.26.176:8804/docs
+- **API Docs**: http://localhost:8804/docs or http://34.121.146.153:8804/docs
 
 ### **Key Commands**
 ```bash
@@ -441,7 +443,7 @@ cd backend-full && source venv/bin/activate && uvicorn src.main:app --reload --p
 cd frontend-v2 && npm run dev
 
 # Deploy backend
-ssh $USER@35.223.26.176 && cd Recruiter.Ai && git pull && sudo systemctl restart recruiter-ai
+gcloud compute ssh taqforce-recruiter-ai-vm --zone=us-central1-a && cd /home/fayzanbhatti/Recruiter.Ai && git pull && sudo systemctl restart recruiter-ai
 
 # Check service status
 sudo systemctl status recruiter-ai

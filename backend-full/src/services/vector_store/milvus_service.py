@@ -1,4 +1,5 @@
 import logging
+import json
 from typing import Dict, List, Optional, Any
 from pymilvus import (
     connections,
@@ -211,17 +212,23 @@ class MilvusService:
     def list_all_resumes(self) -> List[Dict]:
         """List all resumes in the collection"""
         try:
-            if not self.ensure_connection():
+            collection = self.get_resumes_collection()
+            if not collection:
+                logger.error('Failed to get resumes collection')
                 return []
             
-            # Query all resumes
-            results = self.collection.query(
-                expr="resume_id != ''",
+            # Load collection
+            collection.load()
+            
+            # Query all resumes - use empty expression with limit
+            results = collection.query(
+                expr="",
                 output_fields=[
                     "resume_id", "full_name", "email", "phone",
                     "skills", "education", "work_experience",
                     "file_path"
-                ]
+                ],
+                limit=1000  # Set a reasonable limit
             )
             
             # Parse JSON strings back to objects

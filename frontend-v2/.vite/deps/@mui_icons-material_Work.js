@@ -1,15 +1,35 @@
 "use client";
 import {
-  Work_default
-} from "./chunk-ZTNTKQUE.js";
-import "./chunk-C6WWHQR7.js";
-import "./chunk-IMAT3QDG.js";
-import "./chunk-CKWWFWUS.js";
-import "./chunk-T23N53GG.js";
-import "./chunk-FT54CQ4H.js";
-import "./chunk-MX3MQ5YK.js";
-import "./chunk-TVFQMRVC.js";
-import "./chunk-G3PMV62Z.js";
-export {
-  Work_default as default
-};
+  require_createSvgIcon
+} from "./chunk-CDV7LX65.js";
+import {
+  require_interopRequireDefault
+} from "./chunk-TI5GMMY7.js";
+import "./chunk-AQHXBISI.js";
+import "./chunk-2ORZASYJ.js";
+import "./chunk-FWNK54VO.js";
+import {
+  require_jsx_runtime
+} from "./chunk-32NEGIXE.js";
+import "./chunk-65KY755N.js";
+import {
+  __commonJS
+} from "./chunk-V4OQ3NZ2.js";
+
+// node_modules/@mui/icons-material/Work.js
+var require_Work = __commonJS({
+  "node_modules/@mui/icons-material/Work.js"(exports) {
+    var _interopRequireDefault = require_interopRequireDefault();
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.default = void 0;
+    var _createSvgIcon = _interopRequireDefault(require_createSvgIcon());
+    var _jsxRuntime = require_jsx_runtime();
+    var _default = exports.default = (0, _createSvgIcon.default)((0, _jsxRuntime.jsx)("path", {
+      d: "M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2m-6 0h-4V4h4z"
+    }), "Work");
+  }
+});
+export default require_Work();
+//# sourceMappingURL=@mui_icons-material_Work.js.map

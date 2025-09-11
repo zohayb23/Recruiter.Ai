@@ -1,0 +1,127 @@
+{
+  "collection_name": "job_descriptions",
+  "description": "Job description collection for storing job posting data",
+  "fields": [
+    {
+      "name": "id",
+      "type": "varchar",
+      "max_length": 36,
+      "is_primary": true,
+      "description": "Primary key for job description"
+    },
+    {
+      "name": "created_at",
+      "type": "varchar",
+      "max_length": 64,
+      "description": "Creation timestamp"
+    },
+    {
+      "name": "updated_at",
+      "type": "varchar",
+      "max_length": 64,
+      "description": "Last update timestamp"
+    },
+    {
+      "name": "status",
+      "type": "varchar",
+      "max_length": 20,
+      "description": "Job status (draft, published, etc.)"
+    },
+    {
+      "name": "title",
+      "type": "varchar",
+      "max_length": 256,
+      "description": "Job title"
+    },
+    {
+      "name": "company",
+      "type": "varchar",
+      "max_length": 256,
+      "description": "Company name"
+    },
+    {
+      "name": "department",
+      "type": "varchar",
+      "max_length": 256,
+      "description": "Department"
+    },
+    {
+      "name": "location_type",
+      "type": "varchar",
+      "max_length": 64,
+      "description": "Location type (remote, hybrid, in-person)"
+    },
+    {
+      "name": "location",
+      "type": "varchar",
+      "max_length": 256,
+      "description": "Job location"
+    },
+    {
+      "name": "experience_level",
+      "type": "varchar",
+      "max_length": 64,
+      "description": "Experience level required"
+    },
+    {
+      "name": "overview",
+      "type": "varchar",
+      "max_length": 2048,
+      "description": "Job overview"
+    },
+    {
+      "name": "responsibilities",
+      "type": "varchar",
+      "max_length": 4096,
+      "description": "Job responsibilities"
+    },
+    {
+      "name": "qualifications",
+      "type": "varchar",
+      "max_length": 4096,
+      "description": "Required qualifications"
+    },
+    {
+      "name": "required_skills",
+      "type": "varchar",
+      "max_length": 1024,
+      "description": "Required skills"
+    },
+    {
+      "name": "preferred_skills",
+      "type": "varchar",
+      "max_length": 1024,
+      "description": "Preferred skills"
+    },
+    {
+      "name": "benefits",
+      "type": "varchar",
+      "max_length": 2048,
+      "description": "Job benefits"
+    },
+    {
+      "name": "company_description",
+      "type": "varchar",
+      "max_length": 2048,
+      "description": "Company description"
+    },
+    {
+      "name": "culture_values",
+      "type": "varchar",
+      "max_length": 2048,
+      "description": "Company culture and values"
+    },
+    {
+      "name": "diversity_statement",
+      "type": "varchar",
+      "max_length": 2048,
+      "description": "Diversity and inclusion statement"
+    },
+    {
+      "name": "embedding",
+      "type": "float_vector",
+      "dim": 384,
+      "description": "Vector embedding for similarity search"
+    }
+  ]
+}

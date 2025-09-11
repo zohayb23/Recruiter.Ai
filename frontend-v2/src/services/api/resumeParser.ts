@@ -260,3 +260,36 @@ export const parseBulkResumes = async (
     throw new Error(error.response?.data?.detail || error.message || 'Failed to parse bulk resumes');
   }
 };
+
+export const getStoredResumes = async (): Promise<any[]> => {
+  try {
+    const response = await api.get('/api/resume-parser/stored-resumes');
+    // The API returns { total_resumes: number, resumes: [] }
+    const resumes = response.data.resumes || [];
+    
+    // Transform the resume data to match expected frontend format
+    return resumes.map((resume: any) => {
+      // Handle both new and old data structures
+      const transformedResume = {
+        resume_id: resume.metadata?.resume_id || resume.resume_id || '',
+        full_name: resume.basic_information?.name || resume.full_name || '',
+        email: resume.basic_information?.contact?.email || resume.email || '',
+        phone: resume.basic_information?.contact?.phone || resume.phone || '',
+        skills: Array.isArray(resume.skills?.list) ? resume.skills.list : 
+                Array.isArray(resume.skills) ? resume.skills : [],
+        education: Array.isArray(resume.education?.list) ? resume.education.list : 
+                   Array.isArray(resume.education) ? resume.education : [],
+        work_experience: Array.isArray(resume.work_experience) ? resume.work_experience : [],
+        file_path: resume.metadata?.file_path || resume.file_path || '',
+        created_at: resume.metadata?.uploaded_at || resume.created_at || new Date().toISOString(),
+        // Keep original structure for compatibility
+        ...resume
+      };
+      
+      return transformedResume;
+    });
+  } catch (error: any) {
+    console.error('Error fetching stored resumes:', error);
+    throw new Error(error.response?.data?.detail || error.message || 'Failed to fetch stored resumes');
+  }
+};

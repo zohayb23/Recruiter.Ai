@@ -2,13 +2,14 @@
 
 Recruiter.AI is an intelligent recruitment platform that leverages AI to streamline the hiring process. It combines resume parsing, job description generation, and candidate matching capabilities to help recruiters find the best candidates efficiently.
 
-## 🌟 **NEW: Cloud Deployment Available!**
+## 🌟 **NEW: Company GCP Deployment Available!**
 - **🌐 Production Frontend**: Deployed on Netlify with HTTPS
-- **☁️ Production Backend**: Deployed on Google Cloud Platform (GCP) VM
+- **☁️ Production Backend**: Deployed on Google Cloud Platform (GCP) VM in TAQForce project
 - **🔄 Hybrid Setup**: Maintains local development while providing cloud access
 - **📱 Access Anywhere**: Use the application from any device, anywhere
 - **🔗 Smart Proxy**: Netlify automatically routes API calls to cloud backend
-- **⚡ Production Ready**: Full backend connectivity with 16 resumes and 4 job descriptions
+- **⚡ Production Ready**: Full backend connectivity with 14 resumes and 6 job descriptions
+- **🏢 Company Infrastructure**: Running on TAQForce GCP project with personal Milvus database
 
 ## 🚀 Features
 
@@ -66,13 +67,14 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
   - Interactive filter toggles
   - Real-time result counting
 
-#### **NEW: Cloud Infrastructure**
-- ✅ **GCP VM Deployment**: Backend running on Google Cloud Platform
+#### **NEW: Company Cloud Infrastructure**
+- ✅ **GCP VM Deployment**: Backend running on Google Cloud Platform (TAQForce project)
 - ✅ **Netlify Frontend**: Production frontend with automatic deployments
 - ✅ **Smart Environment Detection**: Automatic dev/prod switching
 - ✅ **API Proxy**: Seamless backend connectivity through Netlify
-- ✅ **Production Database**: 16 resumes and 4 job descriptions live
+- ✅ **Production Database**: 14 resumes and 6 job descriptions live
 - ✅ **Service Management**: Systemd service with automatic restarts
+- ✅ **Personal Milvus Integration**: Connected to personal GCP Milvus database
 
 ### Features in Development
 
@@ -135,10 +137,11 @@ Recruiter.AI is an intelligent recruitment platform that leverages AI to streaml
 - Milvus (Vector Database)
 
 ### Cloud Infrastructure
-- **Google Cloud Platform**: VM hosting for backend
+- **Google Cloud Platform**: VM hosting for backend (TAQForce project)
 - **Netlify**: Frontend hosting with automatic deployments
 - **Nginx**: Reverse proxy on GCP VM
 - **Systemd**: Service management for backend
+- **Personal Milvus**: Connected to personal GCP Milvus database
 
 ## 📋 Prerequisites
 
@@ -175,8 +178,8 @@ Create a `.env` file in the `backend-full` directory:
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4-1106-preview  # Required for JSON response format
 
-# Milvus Configuration
-MILVUS_HOST=localhost
+# Milvus Configuration (Company GCP Setup)
+MILVUS_HOST=35.223.26.176  # Personal GCP Milvus database
 MILVUS_PORT=19530
 
 # Optional Performance Tuning
@@ -219,23 +222,24 @@ The application will be available at `http://localhost:5173`
 
 ### Production Access
 - **Frontend**: https://playful-biscuit-e5d6e1-recruiter-ai.netlify.app
-- **Backend**: http://35.223.26.176:8804 (via Netlify proxy)
+- **Backend**: http://34.121.146.153:8804 (Company GCP VM)
+- **Personal Milvus**: http://35.223.26.176:8000 (Attu Web UI)
 
 ### View Cloud Backend Logs
 ```bash
-gcloud compute ssh recruiter-ai-vm --zone=us-central1-a --command="sudo journalctl -u recruiter-ai.service -f --no-pager"
+gcloud compute ssh taqforce-recruiter-ai-vm --zone=us-central1-a --command="sudo journalctl -u recruiter-ai.service -f --no-pager"
 ```
 
 ### Backend Service Management
 ```bash
 # Check service status
-gcloud compute ssh recruiter-ai-vm --zone=us-central1-a --command="sudo systemctl status recruiter-ai.service"
+gcloud compute ssh taqforce-recruiter-ai-vm --zone=us-central1-a --command="sudo systemctl status recruiter-ai.service"
 
 # Restart service
-gcloud compute ssh recruiter-ai-vm --zone=us-central1-a --command="sudo systemctl restart recruiter-ai.service"
+gcloud compute ssh taqforce-recruiter-ai-vm --zone=us-central1-a --command="sudo systemctl restart recruiter-ai.service"
 
 # View real-time logs
-gcloud compute ssh recruiter-ai-vm --zone=us-central1-a --command="sudo journalctl -u recruiter-ai.service -f"
+gcloud compute ssh taqforce-recruiter-ai-vm --zone=us-central1-a --command="sudo journalctl -u recruiter-ai.service -f"
 ```
 
 ## 📁 Project Structure

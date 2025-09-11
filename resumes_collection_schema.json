@@ -1,0 +1,79 @@
+{
+  "collection_name": "resumes",
+  "description": "Resume collection for storing parsed resume data",
+  "fields": [
+    {
+      "name": "resume_id",
+      "type": "varchar",
+      "max_length": 1000,
+      "is_primary": true,
+      "description": "Primary key for resume"
+    },
+    {
+      "name": "full_name",
+      "type": "varchar",
+      "max_length": 1000,
+      "description": "Full name of the candidate"
+    },
+    {
+      "name": "email",
+      "type": "varchar",
+      "max_length": 1000,
+      "description": "Email address"
+    },
+    {
+      "name": "phone",
+      "type": "varchar",
+      "max_length": 1000,
+      "description": "Phone number"
+    },
+    {
+      "name": "linkedin",
+      "type": "varchar",
+      "max_length": 1000,
+      "description": "LinkedIn profile URL"
+    },
+    {
+      "name": "github",
+      "type": "varchar",
+      "max_length": 1000,
+      "description": "GitHub profile URL"
+    },
+    {
+      "name": "website",
+      "type": "varchar",
+      "max_length": 1000,
+      "description": "Personal website URL"
+    },
+    {
+      "name": "file_path",
+      "type": "varchar",
+      "max_length": 5000,
+      "description": "Path to the resume file"
+    },
+    {
+      "name": "skills",
+      "type": "varchar",
+      "max_length": 50000,
+      "description": "Skills and competencies"
+    },
+    {
+      "name": "education",
+      "type": "varchar",
+      "max_length": 50000,
+      "description": "Educational background"
+    },
+    {
+      "name": "work_experience",
+      "type": "varchar",
+      "max_length": 50000,
+      "description": "Work experience details"
+    },
+    {
+      "name": "embedding",
+      "type": "float_vector",
+      "dim": 384,
+      "description": "Vector embedding for similarity search"
+    }
+  ]
+}

@@ -20,6 +20,8 @@ import ResumeParserPage from './pages/ResumeParserPage';
 import BootstrapJobCreationForm from './components/jobs/BootstrapJobCreationForm';
 import KeywordGeneratorPage from './pages/KeywordGeneratorPage';
 import EnhancedSearchPage from './pages/EnhancedSearchPage';
+import CandidateScoringPage from './pages/CandidateScoringPage';
+import DuplicateDetectionPage from './pages/DuplicateDetectionPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -51,6 +53,10 @@ function App() {
               <Route path="/candidates" element={<CandidatesPage />} />
               <Route path="/candidates/import" element={<ResumeImportPage />} />
               <Route path="/candidates/:id" element={<CandidateDetailPage />} />
+              <Route path="/candidates/scoring" element={<CandidateScoringPage />} />
+              
+              {/* Duplicate Detection Route */}
+              <Route path="/duplicates" element={<DuplicateDetectionPage />} />
               
               {/* Resume Parser Route */}
               <Route path="/resume-parser" element={<ResumeParserPage />} />
