@@ -41,3 +41,22 @@ local_settings.py
 db.sqlite3 
 # Local Netlify folder
 .netlify
+
+# Large deployment files and databases
+*.tar.gz
+*.zip
+*.db
+backend-deployment.tar.gz
+mass_mailing_production.tar.gz
+pipeline-crm-deployment.tar.gz
+mass_mailing.db
+
+# Deployment directories
+mass_mailing_production_deploy/
+pipeline-crm-deployment/
+backend-full/
+
+# Cache and temporary files
+cache/
+uploads/
+*.cache
