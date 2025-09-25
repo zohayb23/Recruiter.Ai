@@ -124,7 +124,9 @@ class MilvusService:
 
         # Convert all fields to strings and truncate if necessary
         prepared_data = {
-            "resume_id": self._truncate_field(str(data.get("resume_id", "")), MAX_SHORT_TEXT),
+            "id": self._truncate_field(str(data.get("id", data.get("resume_id", ""))), MAX_SHORT_TEXT),
+            "created_at": self._truncate_field(str(data.get("created_at", "")), MAX_SHORT_TEXT),
+            "updated_at": self._truncate_field(str(data.get("updated_at", "")), MAX_SHORT_TEXT),
             "full_name": self._truncate_field(str(data.get("full_name", "")), MAX_SHORT_TEXT),
             "email": self._truncate_field(str(data.get("email", "")), MAX_SHORT_TEXT),
             "phone": self._truncate_field(str(data.get("phone", "")), MAX_SHORT_TEXT),
@@ -160,9 +162,33 @@ class MilvusService:
                     field_str = json.dumps(field_data)
                 prepared_data[field] = self._truncate_field(field_str, MAX_LONG_TEXT)
 
-            # Handle embedding
+            # Generate embedding if not provided
             if "embedding" in data:
                 prepared_data["embedding"] = data["embedding"]
+            else:
+                # Generate embedding from resume content
+                content_parts = []
+                if prepared_data["full_name"]:
+                    content_parts.append(prepared_data["full_name"])
+                if prepared_data["skills"]:
+                    content_parts.append(prepared_data["skills"])
+                if prepared_data["education"]:
+                    content_parts.append(prepared_data["education"])
+                if prepared_data["work_experience"]:
+                    content_parts.append(prepared_data["work_experience"])
+                
+                content = " ".join(content_parts)
+                if content.strip():
+                    try:
+                        embedding = self.model.encode(content).tolist()
+                        prepared_data["embedding"] = embedding
+                    except Exception as e:
+                        logger.warning(f"Failed to generate embedding: {e}")
+                        # Use a zero vector as fallback
+                        prepared_data["embedding"] = [0.0] * self.dim
+                else:
+                    # Use a zero vector as fallback
+                    prepared_data["embedding"] = [0.0] * self.dim
 
             return prepared_data
         except Exception as e:
@@ -182,7 +208,7 @@ class MilvusService:
             # Insert the data
             result = self.collection.insert([data])
             self.collection.flush()  # Ensure data is persisted
-            logger.info(f"Successfully inserted resume {data['resume_id']}")
+            logger.info(f"Successfully inserted resume {data['id']}")
             return result
         except Exception as e:
             error_msg = f"Failed to insert resume: {str(e)}"
@@ -212,7 +238,11 @@ class MilvusService:
     def list_all_resumes(self) -> List[Dict]:
         """List all resumes in the collection"""
         try:
-            collection = self.get_resumes_collection()
+            if not self.ensure_connection():
+                logger.error('Failed to connect to Milvus')
+                return []
+            
+            collection = self.collection
             if not collection:
                 logger.error('Failed to get resumes collection')
                 return []

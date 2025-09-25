@@ -21,6 +21,25 @@ interface ParsedResumeDisplayProps {
 }
 
 const ParsedResumeDisplay: React.FC<ParsedResumeDisplayProps> = ({ resume }) => {
+  // Add null checks to prevent errors
+  if (!resume) {
+    return (
+      <Box sx={{ width: '100%', mt: 2 }}>
+        <Typography variant="h6" color="error">
+          No resume data available. Please try parsing a resume again.
+        </Typography>
+      </Box>
+    );
+  }
+
+  const contact = resume.contact || {};
+  const fullName = resume.full_name || 'Unknown';
+  const email = contact.email || 'Not provided';
+  const phone = contact.phone || 'Not provided';
+  const education = resume.education || [];
+  const workExperience = resume.work_experience || [];
+  const skills = resume.skills || [];
+
   return (
     <Box sx={{ width: '100%', mt: 2 }}>
       {/* Contact Information */}
@@ -35,21 +54,21 @@ const ParsedResumeDisplay: React.FC<ParsedResumeDisplayProps> = ({ resume }) => 
         <AccordionDetails>
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" fontWeight="bold">{resume.full_name}</Typography>
-              <Typography>{resume.contact.email}</Typography>
-              <Typography>{resume.contact.phone}</Typography>
+              <Typography variant="subtitle1" fontWeight="bold">{fullName}</Typography>
+              <Typography>{email}</Typography>
+              <Typography>{phone}</Typography>
             </Grid>
             <Grid item xs={12} md={6}>
-              {resume.contact.linkedin && (
+              {contact.linkedin && (
                 <Typography>
-                  <Link href={resume.contact.linkedin} target="_blank" rel="noopener noreferrer">
+                  <Link href={contact.linkedin} target="_blank" rel="noopener noreferrer">
                     LinkedIn Profile
                   </Link>
                 </Typography>
               )}
-              {resume.contact.github && (
+              {contact.github && (
                 <Typography>
-                  <Link href={resume.contact.github} target="_blank" rel="noopener noreferrer">
+                  <Link href={contact.github} target="_blank" rel="noopener noreferrer">
                     GitHub Profile
                   </Link>
                 </Typography>
@@ -70,8 +89,8 @@ const ParsedResumeDisplay: React.FC<ParsedResumeDisplayProps> = ({ resume }) => 
         </AccordionSummary>
         <AccordionDetails>
           <List>
-            {resume.education.map((edu, index) => (
-              <ListItem key={index} divider={index < resume.education.length - 1}>
+            {education.map((edu, index) => (
+              <ListItem key={index} divider={index < education.length - 1}>
                 <ListItemText
                   primary={
                     <Typography variant="subtitle1" fontWeight="bold">
@@ -108,27 +127,34 @@ const ParsedResumeDisplay: React.FC<ParsedResumeDisplayProps> = ({ resume }) => 
         </AccordionSummary>
         <AccordionDetails>
           <List>
-            {resume.work_experience.map((exp, index) => (
-              <ListItem key={index} divider={index < resume.work_experience.length - 1}>
+            {workExperience.map((exp, index) => (
+              <ListItem key={index} divider={index < workExperience.length - 1}>
                 <ListItemText
                   primary={
                     <Typography variant="subtitle1" fontWeight="bold">
-                      {exp.title} {exp.company && `at ${exp.company}`}
+                      {exp.title || 'Unknown Position'} {exp.company && `at ${exp.company}`}
                     </Typography>
                   }
                   secondary={
                     <Box>
                       <Typography component="span" color="text.secondary" display="block">
-                        {exp.start_date} - {exp.end_date || 'Present'}
+                        {exp.start_date || 'Unknown'} - {exp.end_date || 'Present'}
                       </Typography>
                       <List dense>
-                        {exp.description.map((desc, i) => (
-                          <ListItem key={i}>
-                            <ListItemText primary={desc} />
-                          </ListItem>
-                        ))}
+                        {Array.isArray(exp.description) 
+                          ? exp.description.map((desc, i) => (
+                              <ListItem key={i}>
+                                <ListItemText primary={desc} />
+                              </ListItem>
+                            ))
+                          : exp.description && (
+                              <ListItem>
+                                <ListItemText primary={exp.description} />
+                              </ListItem>
+                            )
+                        }
                       </List>
-                      {exp.technologies.length > 0 && (
+                      {exp.technologies && Array.isArray(exp.technologies) && exp.technologies.length > 0 && (
                         <Box sx={{ mt: 1 }}>
                           {exp.technologies.map((tech, i) => (
                             <Chip
@@ -161,7 +187,7 @@ const ParsedResumeDisplay: React.FC<ParsedResumeDisplayProps> = ({ resume }) => 
         <AccordionDetails>
           <Grid container spacing={2}>
             {Object.entries(
-              resume.skills.reduce((acc, skill) => {
+              skills.reduce((acc, skill) => {
                 if (!acc[skill.category]) {
                   acc[skill.category] = [];
                 }

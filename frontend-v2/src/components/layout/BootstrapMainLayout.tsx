@@ -74,6 +74,52 @@ const BootstrapMainLayout = () => {
             </Link>
           </li>
 
+          <li className={`nav-item ${isActivePath('/gap-analysis') ? 'active' : ''}`}>
+            <Link className="nav-link" to="/gap-analysis">
+              <i className="fas fa-fw fa-chart-bar"></i>
+              <span>Gap Analysis</span>
+            </Link>
+          </li>
+
+          <li className={`nav-item ${isActivePath('/semantic-search') ? 'active' : ''}`}>
+            <Link className="nav-link" to="/semantic-search">
+              <i className="fas fa-fw fa-search-plus"></i>
+              <span>Semantic Search</span>
+            </Link>
+          </li>
+
+          <li className={`nav-item ${isActivePath('/pipeline-crm') ? 'active' : ''}`}>
+            <Link className="nav-link" to="/pipeline-crm">
+              <i className="fas fa-fw fa-sitemap"></i>
+              <span>Pipeline CRM</span>
+            </Link>
+          </li>
+
+              <li className={`nav-item ${isActivePath('/mass-mailing') ? 'active' : ''}`}>
+                <Link className="nav-link" to="/mass-mailing">
+                  <i className="fas fa-fw fa-envelope-open-text"></i>
+                  <span>Mass Mailing</span>
+                </Link>
+              </li>
+              <li className={`nav-item ${isActivePath('/ab-testing') ? 'active' : ''}`}>
+                <Link className="nav-link" to="/ab-testing">
+                  <i className="fas fa-fw fa-flask"></i>
+                  <span>A/B Testing</span>
+                </Link>
+              </li>
+              <li className={`nav-item ${isActivePath('/segmentation') ? 'active' : ''}`}>
+                <Link className="nav-link" to="/segmentation">
+                  <i className="fas fa-fw fa-filter"></i>
+                  <span>Segmentation</span>
+                </Link>
+              </li>
+              <li className={`nav-item ${isActivePath('/automation') ? 'active' : ''}`}>
+                <Link className="nav-link" to="/automation">
+                  <i className="fas fa-fw fa-robot"></i>
+                  <span>Automation</span>
+                </Link>
+              </li>
+
           <li className={`nav-item ${isActivePath('/keyword-generator') ? 'active' : ''}`}>
             <Link className="nav-link" to="/keyword-generator">
               <i className="fas fa-fw fa-magic"></i>

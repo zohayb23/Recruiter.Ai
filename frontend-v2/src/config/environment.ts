@@ -21,26 +21,59 @@ export const ENV = {
     );
   },
 
-  // Get the appropriate API base URL
-  getApiBaseUrl: () => {
-    if (ENV.isDevelopment()) {
-      // Development: use new GCP backend directly on port 8804
-      return 'http://34.121.146.153:8804';
-    } else {
-      // Production: use relative URLs for Netlify proxy
-      return '';
-    }
-  },
+        // Get the appropriate API base URL
+        getApiBaseUrl: () => {
+            if (ENV.isDevelopment()) {
+                // Development: use local complete backend with Milvus integration
+                return 'http://localhost:8804';
+            } else {
+                // Production: use relative URLs for Netlify proxy
+                return '';
+            }
+        },
 
-  // Get the backend URL for direct access (useful for debugging)
-  getBackendUrl: () => {
-    if (ENV.isDevelopment()) {
-      // Development: use new GCP backend directly
-      return 'http://34.121.146.153:8804';
-    } else {
-      return 'http://34.121.146.153';
-    }
-  },
+        // Get the gap detection backend URL
+        getGapDetectionUrl: () => {
+            if (ENV.isDevelopment()) {
+                // Development: use local gap detection backend
+                return 'http://localhost:8808';
+            } else {
+                // Production: use GCP gap detection backend
+                return 'http://34.121.146.153:8808';
+            }
+        },
+
+        // Get the pipeline CRM backend URL
+        getPipelineCRMUrl: () => {
+            if (ENV.isDevelopment()) {
+                // Development: use local pipeline CRM backend
+                return 'http://localhost:8809';
+            } else {
+                // Production: use GCP pipeline CRM backend
+                return 'http://34.121.146.153:8809';
+            }
+        },
+
+        // Get the mass mailing backend URL
+        getMassMailingUrl: () => {
+            if (ENV.isDevelopment()) {
+                // Development: use local mass mailing backend
+                return 'http://localhost:8810';
+            } else {
+                // Production: use GCP mass mailing backend
+                return 'http://34.121.146.153:8810';
+            }
+        },
+
+        // Get the backend URL for direct access (useful for debugging)
+        getBackendUrl: () => {
+            if (ENV.isDevelopment()) {
+                // Development: use local complete backend with Milvus integration
+                return 'http://localhost:8804';
+            } else {
+                return 'http://34.121.146.153:8804';
+            }
+        },
 
   // Get environment info for debugging
   getInfo: () => ({

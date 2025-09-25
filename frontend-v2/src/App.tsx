@@ -22,6 +22,13 @@ import KeywordGeneratorPage from './pages/KeywordGeneratorPage';
 import EnhancedSearchPage from './pages/EnhancedSearchPage';
 import CandidateScoringPage from './pages/CandidateScoringPage';
 import DuplicateDetectionPage from './pages/DuplicateDetectionPage';
+import GapAnalysisPage from './pages/GapAnalysisPage';
+import SemanticSearchPage from './pages/SemanticSearchPage';
+import PipelineCRMPage from './pages/PipelineCRMPage';
+import MassMailingPage from './pages/MassMailingPage';
+import ABTestingPage from './pages/ABTestingPage';
+import SegmentationPage from './pages/SegmentationPage';
+import AutomationPage from './pages/AutomationPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -60,6 +67,21 @@ function App() {
               
               {/* Resume Parser Route */}
               <Route path="/resume-parser" element={<ResumeParserPage />} />
+              
+              {/* Gap Analysis Route */}
+              <Route path="/gap-analysis" element={<GapAnalysisPage />} />
+              
+              {/* Semantic Search Route */}
+              <Route path="/semantic-search" element={<SemanticSearchPage />} />
+              
+              {/* Pipeline CRM Route */}
+              <Route path="/pipeline-crm" element={<PipelineCRMPage />} />
+              
+              {/* Mass Mailing Route */}
+              <Route path="/mass-mailing" element={<MassMailingPage />} />
+            <Route path="/ab-testing" element={<ABTestingPage />} />
+            <Route path="/segmentation" element={<SegmentationPage />} />
+            <Route path="/automation" element={<AutomationPage />} />
               
               {/* Search Utils Routes */}
               <Route path="/keyword-generator" element={<KeywordGeneratorPage />} />

@@ -17,6 +17,7 @@ class Benefit(BaseModel):
 class JobDescription(BaseModel):
     id: str
     title: str
+    company: Optional[str] = None
     department: Optional[str] = None
     location_type: Optional[str] = "remote"
     location: Optional[str] = None
@@ -37,6 +38,7 @@ class JobDescription(BaseModel):
 class JobDescriptionResponse(BaseModel):
     id: str
     title: str
+    company: Optional[str] = None
     department: Optional[str] = None
     location_type: Optional[str] = "remote"
     location: Optional[str] = None

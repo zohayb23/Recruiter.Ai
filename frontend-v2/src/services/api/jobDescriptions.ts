@@ -9,6 +9,7 @@ export interface JobDescriptionResponse {
   location?: string;
   location_type?: string;
   experience_level?: string;
+  overview?: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -23,8 +24,9 @@ export interface JobDescription {
 }
 
 export const getJobDescriptions = async (): Promise<JobDescriptionResponse[]> => {
-  const response = await api.get('/api/job-descriptions/drafts');
-  return response.data;
+  const response = await api.get('/api/job-descriptions');
+  // Backend returns { job_descriptions: [...], total: X, message: "..." }
+  return response.data.job_descriptions || [];
 };
 
 export const getJobDescription = async (id: string): Promise<JobDescriptionResponse> => {

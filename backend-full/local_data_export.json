@@ -1,0 +1,524 @@
+{
+  "resumes": [
+    {
+      "full_name": "",
+      "email": "",
+      "phone": "",
+      "skills": [
+        "{'name': 'Agile', 'category': 'methodologies'}",
+        "{'name': 'DevOps', 'category': 'methodologies'}"
+      ],
+      "education": [
+        {
+          "degree": "BS Business Administration and Information Systems",
+          "institution": "Salisbury University",
+          "start_date": null,
+          "end_date": null
+        }
+      ],
+      "work_experience": [
+        {
+          "title": "Director, IT Application Services",
+          "company": "TidalHealth",
+          "start_date": "2020-08",
+          "end_date": "Present",
+          "description": [
+            "Responsible for directing the Application Services division's activities that support all Clinical, RevCycle, Patient Access, Financial, and Analytics operations of a multi-site health system enterprise.",
+            "Lead and manage Epic implementations for hospital acquisitions and community affiliates which includes developing scope and requirements, developing project timelines, workflow redesigns, data migration activities, integrations with 3rd party vendors, managing project risks, aligning resources where needed, developing and executing go-live implementation plans, managing post go-live issues and operational oversight to achieve system stability and ensure business areas achieve expected goals.",
+            "Plan and execute system optimization initiatives.",
+            "Work with executive teams to plan, prioritize, and implement system strategies that support the organization's strategic goals.",
+            "Establish and maintain key relationships with operational leaders, vendors, local agencies, and peer organizations.",
+            "Collaborate with the CIO/CMIO to develop IT strategies, standards, and budget.",
+            "Oversee multiple large-scale projects, including development, installation, and major modification of systems from concept to full operation across the enterprise.",
+            "Developed and executed the organization's information exchange and connectivity integration strategy with HIEs and external agencies.",
+            "Conduct research and evaluation of new technologies and IT industry trends related to data administration, capacity planning, training, and application support.",
+            "Develop specifications for purchases, evaluate proposals, and initiate procurement. Ensure vendors are performing to contractual expectations.",
+            "Developed and continue to oversee the IT division\u2019s project portfolio and resource capacity planning process. Implemented the methodologies to support the intake, review and planning efforts."
+          ],
+          "technologies": [
+            "Epic"
+          ]
+        },
+        {
+          "title": "Director, IT Ambulatory Services",
+          "company": "TidalHealth",
+          "start_date": "2017-08",
+          "end_date": "2020-08",
+          "description": [
+            "Led the IT Ambulatory Services team to implement the EpicCare Ambulatory suite including Care Everywhere, Care Link, Healthy Planet, MyChart, and Beacon.",
+            "Developed and maintained an EMR migration, implementation, and support methodology for TidalHealth's office expansion initiatives and Community Connect program.",
+            "Worked with senior management to plan, prioritize, and implement system strategies that support the goals of the Ambulatory Services, Population Health, and Clinically Integrated Network divisions.",
+            "Developed the strategy and implemented the integration and exchange of clinical information via EDI within the TidalHealth community of employed and non-employed providers and state HIE's.",
+            "Managed and directed the IT team's operations to support these initiatives and continued workflow optimization efforts.",
+            "Directed the implementation of projects, ensuring objectives and projected timelines were achieved."
+          ],
+          "technologies": [
+            "EpicCare Ambulatory",
+            "EDI"
+          ]
+        },
+        {
+          "title": "IT Ambulatory Services Manager",
+          "company": "TidalHealth",
+          "start_date": "2013-08",
+          "end_date": "2017-08",
+          "description": [
+            "Managed the Application Services team, which included Clinical and Financial System Analysts and Project Leads to implement and provide support for software applications used within TidalHealth.",
+            "Evaluated and applied computer technologies for technological enhancements within respective departments.",
+            "Worked with management in strategic planning to meet organizational needs for information systems and facilitated project prioritization for clinical areas.",
+            "Developed and implemented an IT project portfolio tracking system to support project prioritization planning efforts and staffing needs for the IT department.",
+            "IT Program Manager for Meaningful Use (MU) responsible for planning and executing all related IT projects/work efforts.",
+            "Worked with executive team members to interpret regulatory objective specifications. Facilitated MU working groups and worked with operational teams to implement processes to support each objective.",
+            "Led multiple large IT projects involving cross-functional teams to implement strategies and solutions."
+          ],
+          "technologies": []
+        },
+        {
+          "title": "IT Application Services Supervisor",
+          "company": "TidalHealth",
+          "start_date": "2007-02",
+          "end_date": "2013-08",
+          "description": [
+            "Managed the Application Services team, which included Clinical and Financial System Analysts and Project Leads to implement and provide support for software applications used within TidalHealth.",
+            "Evaluated and applied computer technologies for technological enhancements within respective departments.",
+            "Worked with management in strategic planning to meet organizational needs for information systems and facilitated project prioritization for clinical areas.",
+            "Developed and implemented an IT project portfolio tracking system to support project prioritization planning efforts and staffing needs for the IT department.",
+            "IT Program Manager for Meaningful Use (MU) responsible for planning and executing all related IT projects/work efforts.",
+            "Worked with executive team members to interpret regulatory objective specifications. Facilitated MU working groups and worked with operational teams to implement processes to support each objective.",
+            "Led multiple large IT projects involving cross-functional teams to implement strategies and solutions."
+          ],
+          "technologies": []
+        },
+        {
+          "title": "IT Business Channel Manager & Project Lead",
+          "company": "Perdue Farms, Incorporated",
+          "start_date": "1999-01",
+          "end_date": "2007-01",
+          "description": [
+            "Worked with the Foodservice, Retail, Finance, and International executive teams to ensure high-impact IT opportunities were identified and implemented within the business units.",
+            "Provided advice to the business on selecting and implementing information systems to support long-term business goals.",
+            "Facilitated project prioritization and communicated status with business management.",
+            "Worked with functional areas in the planning, designing, and executing business process improvements.",
+            "Key facilitator in developing E-Commerce strategies in the Foodservice and Retail divisions.",
+            "Developed and managed relationships with the key industry eMarketplaces and negotiated vendor agreements with each.",
+            "Educated the executive team on each eMarketplace's progress and our customers' readiness levels."
+          ],
+          "technologies": [
+            "E-Commerce"
+          ]
+        },
+        {
+          "title": "Programmer Analyst and Sr. Marketing Analyst",
+          "company": "Preston Trucking Co",
+          "start_date": "1989-03",
+          "end_date": "1997-10",
+          "description": [],
+          "technologies": []
+        },
+        {
+          "title": "Manager",
+          "company": "Cropper and Deeley Insurance Broker",
+          "start_date": "1987-08",
+          "end_date": "1989-03",
+          "description": [
+            "Managed the operations of the Life & Health division"
+          ],
+          "technologies": []
+        }
+      ],
+      "file_path": "uploads/resumes/219ab913-f494-4d6f-89b1-b7e3b14246ba.docx",
+      "resume_id": "c5fd9bec-a62c-4d33-a965-11898d2ba933"
+    },
+    {
+      "full_name": "Camelhia Gray",
+      "email": "camelhia@gmail.com",
+      "phone": "704-904-2008",
+      "skills": [
+        "{'name': 'SQL', 'category': 'programming_languages'}",
+        "{'name': 'Sherlock/Nova', 'category': 'tools'}",
+        "{'name': 'JXPORT', 'category': 'tools'}",
+        "{'name': 'Microsoft Office', 'category': 'tools'}",
+        "{'name': 'ServiceNow', 'category': 'tools'}",
+        "{'name': 'Data management and analysis', 'category': 'methodologies'}",
+        "{'name': 'Problem-Solving', 'category': 'methodologies'}",
+        "{'name': 'Technical', 'category': 'methodologies'}"
+      ],
+      "education": [
+        {
+          "degree": "Associate of Science \u2013 Computer Information Science",
+          "institution": "ECPI University",
+          "start_date": null,
+          "end_date": null
+        }
+      ],
+      "work_experience": [
+        {
+          "title": "Cadence Analyst",
+          "company": "Piedmont Health",
+          "start_date": "2024-12",
+          "end_date": "Present",
+          "description": [
+            "Responsible for building and deploying decision trees, visit types, generic resources, schedule order work queues, referral work queues, patient work queues.",
+            "Build and modify advanced visit type/blocks.",
+            "Build and modify decision trees for scheduling.",
+            "Responsible for running chronicles reports and JXPORTS for data analysis.",
+            "Responsible for maintaining/updating users Epic security templates.",
+            "Involved in testing, coordinating, documenting for upgrades and projects.",
+            "Provided technical support and troubleshooting to end-users and resolving issues.",
+            "Handle support tickets in Ivanti ticketing system."
+          ],
+          "technologies": [
+            "Ivanti"
+          ]
+        },
+        {
+          "title": "Referral Application Analyst",
+          "company": "Care New England",
+          "start_date": "2024-08",
+          "end_date": "2024-11",
+          "description": [
+            "Responsible for design, build, testing, validation, implementing and supporting Epic for multi-department roll-out for Refuel Referrals project.",
+            "Streamlined referral processes",
+            "Optimize workflows and improve patient care.",
+            "Implemented new referral work queues",
+            "Auto assignment table",
+            "Built auto authorize referrals based on list of payers.",
+            "Converted referral work queues into appt request work queues for scheduling.",
+            "Presented demos to operational stakeholders.",
+            "Work alongside training to create training materials of new workflows.",
+            "Cleaned up old referrals out of work queues within certain date range and referral statuses"
+          ],
+          "technologies": []
+        },
+        {
+          "title": "Senior Application Analyst",
+          "company": "Novant Health",
+          "start_date": "2015-04",
+          "end_date": "2024-08",
+          "description": [
+            "Responsible for design, build, testing, validation, implementing, and supporting Epic for multi-facility roll-outs and complex projects.",
+            "Configured and customized application modules to align with organizational requirements.",
+            "Provide Epic application support (support tickets, service/change requests)",
+            "Implemented E-Check In for acute departments.",
+            "Updated E-Check In workflows based on operations requests",
+            "Created new patient verification statuses to reflect patients E-Check In process",
+            "Created MSPQ questionnaire to be utilized within E-Check In workflow",
+            "Add E-Sig documents for patients",
+            "Ticket Scheduling",
+            "Build, test and implement to enable providers for ticket scheduling.",
+            "Direct Scheduling and Open Scheduling",
+            "Implement Epic-to-Epic conversion project.",
+            "Build and deployed Epic Autobook that included over 30k appointments.",
+            "Convert visit types, providers, duration, date, appointment time and patients from legacy system to new system into production environment.",
+            "Create and implement translation table for conversion of blocks category list.",
+            "Created crosswalks for departments, visit types and providers.",
+            "Converted referral, patient, and schedule order workqueues.",
+            "Lead appointment conversion.",
+            "Lead and completed Small-Scale, Full-Scale, and Large-Scale testing.",
+            "Conducted discovery with stake holders and operations, build, test and implement build.",
+            "Build, test, and implement automatic dialer system with vendor SpinSci.",
+            "Worked alongside vendor, BI team, Enterprise Integration Team, and operations to turn on Spinsci auto-dialer to call patients to schedule from the referral workqueues.",
+            "Responsible for identifying referral workqueues to build out the reports to send to Spinsci, build jobs/batch/run to file in the results from the vendor into the Communication field within the patient referrals.",
+            "Update Scheduling Status Auto Assign table within the Referral System Defs.",
+            "Responsible for build, testing and implemented EAF facility to existing Care Everywhere setup",
+            "Created Place of Service and enter direct address.",
+            "Complete testing and implement build into production.",
+            "Implemented Welcome on Windows tablets for admitting departments as well iPads for E-Consents and questionnaires for Radiology.",
+            "Responsible for running chronicles reports and JXPORTS for data analysis.",
+            "Responsible for maintaining/updating users Epic security templates.",
+            "Involved in testing, coordinating, documenting for upgrades and projects.",
+            "Managed, build and support Epic upgrades and special updates.",
+            "Collaborated with stakeholders, end users and IT teams to gather requirements, analyze system functionality and design optimal solutions to streamline process.",
+            "Participated in projects, processes, and documentation to support users\u2019 needs and quality improvements.",
+            "Provided technical support and troubleshooting to end-users and resolving issues.",
+            "Provide command center support for multiple go lives.",
+            "Rotating on-call coverage"
+          ],
+          "technologies": [
+            "SpinSci",
+            "Epic"
+          ]
+        },
+        {
+          "title": "Application Analyst",
+          "company": "Medflow",
+          "start_date": "2012-08",
+          "end_date": "2015-04",
+          "description": [
+            "Train and provide technical support to 200+ clinics.",
+            "Provided technical support and training for ophthalmology software products to 75+ clinics.",
+            "Utilized SQL to edit and pull queries and scripts for troubleshooting and provide table management.",
+            "Installed and repaired software applications on PCs, terminal and application servers.",
+            "Worked closely with clients to gather requirements and developed customized solutions."
+          ],
+          "technologies": [
+            "SQL"
+          ]
+        }
+      ],
+      "file_path": "uploads/resumes/d2c7aeb0-b228-46a0-b4d0-fb9e7e415d6c.docx",
+      "resume_id": "cdec155c-4aa8-4d00-b3b8-edae22466c6c"
+    }
+  ],
+  "job_descriptions": [
+    {
+      "id": "0af4b0d0-b5dd-431d-bb6a-d79c3fea5edc",
+      "created_at": "2025-09-16T23:45:24.020842",
+      "updated_at": "2025-09-16T23:45:24.020842",
+      "status": "published",
+      "title": "Frontend Engineer",
+      "company": "None",
+      "department": "Engineer",
+      "location_type": "remote",
+      "location": "",
+      "experience_level": "senior",
+      "overview": "We are seeking a Senior Frontend Engineer to join our growing Engineering Department. This is a remote role, allowing you the flexibility to work from any location. As a Senior Frontend Engineer, you will be responsible for creating and implementing user interface components for our cutting-edge products. You will work closely with other engineers and developers to deliver superior quality applications that enhance user experience.",
+      "responsibilities": [
+        {
+          "description": "Develop high-quality software design and architecture",
+          "is_required": true
+        },
+        {
+          "description": "Identify, prioritize and execute tasks in the software development life cycle",
+          "is_required": true
+        }
+      ],
+      "qualifications": [
+        {
+          "description": "Bachelor's degree in Computer Science, Engineering, or a related field",
+          "is_required": true
+        },
+        {
+          "description": "Experience with graphic design applications such as Adobe Illustrator",
+          "is_required": false
+        }
+      ],
+      "required_skills": [
+        "JavaScript",
+        "HTML5",
+        "CSS3",
+        "ReactJS"
+      ],
+      "preferred_skills": [
+        "Node.js",
+        "Vue.js",
+        "AngularJS",
+        "Adobe Illustrator"
+      ],
+      "benefits": [
+        {
+          "title": "Health Insurance",
+          "description": "Comprehensive health insurance including medical, dental, and vision."
+        },
+        {
+          "title": "Work-Life Balance",
+          "description": "Flexible work schedules and unlimited PTO policy."
+        }
+      ],
+      "company_description": "Tesla is a world-renowned company that designs, manufactures, and sells electric vehicles and clean energy storage. We are committed to changing the world's perspective on electric vehicles by creating beautifully designed, highly efficient electric cars.",
+      "culture_values": "At Tesla, we believe in a culture of continuous learning and innovation. We value teamwork, integrity, and excellence, with a strong emphasis on thinking outside the box and creating groundbreaking solutions that redefine the future of sustainable energy.",
+      "diversity_statement": "Tesla is committed to diversity and inclusion. We believe in fostering an environment where differences are celebrated, and everyone feels valued and empowered to perform at their best. We are an equal opportunity employer and encourage people from all backgrounds to apply."
+    },
+    {
+      "id": "233f1c22-eb90-4315-a865-cbe644e27c28",
+      "created_at": "2025-09-16T23:19:43.534640",
+      "updated_at": "2025-09-16T23:19:43.534640",
+      "status": "published",
+      "title": "Software Engineer",
+      "company": "",
+      "department": "",
+      "location_type": "remote",
+      "location": "",
+      "experience_level": "",
+      "overview": "Apple is seeking a competent and experienced Software Engineer to join our team. The successful candidate will be responsible for designing, developing and implementing software solutions to address complex business issues. This remote position provides the opportunity to work in a fast-paced, high-tech environment where creativity, innovation, and collaboration are highly encouraged.",
+      "responsibilities": [
+        {
+          "description": "Develop high-quality software design and architecture.",
+          "is_required": true
+        },
+        {
+          "description": "Identify, prioritize and execute tasks in the software development life cycle.",
+          "is_required": true
+        },
+        {
+          "description": "Perform validation and verification testing.",
+          "is_required": true
+        },
+        {
+          "description": "Collaborate with internal teams and vendors to fix and improve products.",
+          "is_required": true
+        },
+        {
+          "description": "Document development phases and monitor systems.",
+          "is_required": true
+        }
+      ],
+      "qualifications": [
+        {
+          "description": "BSc degree in Computer Science, Engineering or relevant field.",
+          "is_required": true
+        },
+        {
+          "description": "Proven experience as a Software Engineer or similar role.",
+          "is_required": true
+        },
+        {
+          "description": "Experience with software design and development in a test-driven environment.",
+          "is_required": false
+        },
+        {
+          "description": "Knowledge of coding languages (e.g. C++, Java, JavaScript) and frameworks/systems (e.g. AngularJS, Git).",
+          "is_required": false
+        }
+      ],
+      "required_skills": [
+        "problem-solving",
+        "teamwork",
+        "attention to detail",
+        "knowledge of algorithms and data structures"
+      ],
+      "preferred_skills": [
+        "knowledge of programming languages",
+        "project management",
+        "data science",
+        "knowledge of software development methodologies"
+      ],
+      "benefits": [
+        {
+          "title": "Health Coverage",
+          "description": "Full medical, dental, and vision coverage"
+        },
+        {
+          "title": "Work-Life Balance",
+          "description": "Flexible work schedules and unlimited paid time off"
+        },
+        {
+          "title": "Professional Development",
+          "description": "Continuous learning and professional development opportunities"
+        },
+        {
+          "title": "Retirement Plan",
+          "description": "Competitive 401(k) retirement savings plan"
+        }
+      ],
+      "company_description": "Apple is a multinational technology company that specializes in consumer electronics, computer software, and online services. Apple is the world's largest technology company by revenue and one of the world's most valuable companies.",
+      "culture_values": "At Apple, we\u2019re not all the same. And that\u2019s our greatest strength. We draw on the differences in who we are, what we\u2019ve experienced, and how we think. Because to create products that serve everyone, we believe in including everyone.",
+      "diversity_statement": "Apple is open to everyone, no matter where they come from, what they look like, how they worship, or who they love. We consider all applicants without regard to race, color, religion, sex, national origin, age, disability, or any other legally protected status."
+    },
+    {
+      "id": "apple_software_engineer_001",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "status": "published",
+      "title": "Software Engineer",
+      "company": "Apple",
+      "department": "Engineering",
+      "location_type": "Remote",
+      "location": "Cupertino, CA / Remote",
+      "experience_level": "Mid-Senior",
+      "overview": "Apple is seeking a competent and experienced Software Engineer to join our team. The successful candidate will be responsible for designing, developing, and maintaining high-quality software solutions that power our innovative products.",
+      "responsibilities": "Design and develop scalable software applications, Collaborate with cross-functional teams, Write clean and maintainable code, Participate in code reviews and technical discussions",
+      "qualifications": "Bachelor's degree in Computer Science or related field, 3+ years of software development experience, Strong programming skills in Python, JavaScript, or Swift",
+      "required_skills": "Python, JavaScript, Swift, iOS Development, RESTful APIs",
+      "preferred_skills": "Machine Learning, Cloud Computing, DevOps, Agile Methodologies",
+      "benefits": "Competitive salary, Health insurance, Stock options, Flexible work arrangements",
+      "company_description": "Apple Inc. is an American multinational technology company that specializes in consumer electronics, computer software, and online services.",
+      "culture_values": "Innovation, Quality, Simplicity, Privacy, Environmental responsibility",
+      "diversity_statement": "Apple is committed to diversity and inclusion. We welcome applications from all qualified candidates."
+    },
+    {
+      "id": "ba9ad7fb-5a53-4c2b-8b45-f04aaee4249f",
+      "created_at": "2025-09-16T23:25:17.171061",
+      "updated_at": "2025-09-16T23:25:17.171061",
+      "status": "published",
+      "title": "Senior Software Engineer",
+      "company": "",
+      "department": "",
+      "location_type": "remote",
+      "location": "",
+      "experience_level": "",
+      "overview": "IBM is seeking a dedicated and experienced Senior Software Engineer to join our talented team. This remote position offers the opportunity to work alongside industry professionals in a dynamic and collaborative environment. The ideal candidate will have a robust understanding of software development processes and be capable of creating high-quality, scalable software solutions.",
+      "responsibilities": [
+        {
+          "description": "Design, develop, and implement high-quality software solutions",
+          "is_required": true
+        },
+        {
+          "description": "Collaborate with team members to define project objectives and deliver on project milestones",
+          "is_required": true
+        },
+        {
+          "description": "Perform software debugging and testing operations",
+          "is_required": true
+        },
+        {
+          "description": "Maintain and improve existing codebases for optimization",
+          "is_required": true
+        },
+        {
+          "description": "Provide technical guidance to junior team members",
+          "is_required": true
+        }
+      ],
+      "qualifications": [
+        {
+          "description": "Bachelor\u2019s degree in Computer Science or a related field",
+          "is_required": true
+        },
+        {
+          "description": "Minimum 5 years of experience in software development",
+          "is_required": true
+        },
+        {
+          "description": "Proven experience with at least one programming language (Java, Python, C++, etc.)",
+          "is_required": true
+        },
+        {
+          "description": "Experience with database systems, both SQL and NoSQL",
+          "is_required": false
+        },
+        {
+          "description": "Knowledge of cloud platforms like AWS, Azure or GCP",
+          "is_required": false
+        }
+      ],
+      "required_skills": [
+        "Problem-solving",
+        "Communication",
+        "Teamwork",
+        "Programming in various languages",
+        "Debugging",
+        "Testing"
+      ],
+      "preferred_skills": [
+        "Project management",
+        "Database management",
+        "Cloud platform knowledge"
+      ],
+      "benefits": [
+        {
+          "title": "Health and Wellness",
+          "description": "IBM offers comprehensive health plans and wellness programs."
+        },
+        {
+          "title": "Professional Development",
+          "description": "Opportunities for professional growth through training and educational programs."
+        },
+        {
+          "title": "Work-Life Balance",
+          "description": "Flexible work arrangements and paid time off."
+        },
+        {
+          "title": "Retirement Plans",
+          "description": "Competitive 401(k) retirement plan."
+        }
+      ],
+      "company_description": "IBM is a leading global technology and consulting company. For over a century, IBM has been dedicated to every client's success and to creating innovations that matter for the world.",
+      "culture_values": "At IBM, we believe in fostering a culture of openness, innovation, trust, and the continuous exchange of ideas. We are committed to promoting a diverse environment where individual perspectives and ideas are respected and valued.",
+      "diversity_statement": "IBM is committed to diversity and inclusion and values the unique experiences and perspectives each individual brings. We believe that fostering a diverse and inclusive workplace is not only the right thing to do, but it also helps drive innovation and success."
+    }
+  ],
+  "export_timestamp": "2024-01-01T00:00:00Z",
+  "total_resumes": 2,
+  "total_jobs": 4
+}

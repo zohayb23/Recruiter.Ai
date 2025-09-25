@@ -28,8 +28,10 @@ export interface JobsResponse {
 }
 
 export const searchJobs = async (filters: JobFilters): Promise<JobsResponse> => {
-  const response = await api.get('/api/job-descriptions/drafts');
-    return { data: response.data, total: response.data.length, page: 1, limit: response.data.length };
+  const response = await api.get('/api/job-descriptions');
+  // Backend returns { job_descriptions: [...], total: X, message: "..." }
+  const jobs = response.data.job_descriptions || [];
+  return { data: jobs, total: jobs.length, page: 1, limit: jobs.length };
 };
 
 export const getJobById = async (id: string): Promise<Job> => {

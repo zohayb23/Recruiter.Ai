@@ -134,10 +134,90 @@ class JobDescriptionService:
     async def list_job_descriptions(self, status: Optional[str] = None) -> List[JobDescription]:
         """List all job descriptions, optionally filtered by status"""
         try:
-            return await milvus_job_service.get_job_descriptions(status)
+            jobs_data = await milvus_job_service.get_job_descriptions(status)
+            # Convert the data to proper format
+            converted_jobs = []
+            for job_data in jobs_data:
+                converted_job = self._convert_job_data(job_data)
+                converted_jobs.append(JobDescription(**converted_job))
+            return converted_jobs
         except Exception as e:
             logger.error(f"Error listing job descriptions: {e}")
             raise
+
+    def _convert_job_data(self, job_data: Dict) -> Dict:
+        """Convert job data from Milvus format to proper format"""
+        try:
+            # Handle responsibilities
+            responsibilities = job_data.get('responsibilities', [])
+            if isinstance(responsibilities, str):
+                # Convert string to list of Responsibility objects
+                responsibilities = [{"description": resp.strip(), "is_required": True} 
+                                 for resp in responsibilities.split(',') if resp.strip()]
+            elif isinstance(responsibilities, list) and responsibilities and isinstance(responsibilities[0], dict):
+                # Already in correct format
+                pass
+            else:
+                responsibilities = []
+
+            # Handle qualifications
+            qualifications = job_data.get('qualifications', [])
+            if isinstance(qualifications, str):
+                qualifications = [{"description": qual.strip(), "is_required": True} 
+                                for qual in qualifications.split(',') if qual.strip()]
+            elif isinstance(qualifications, list) and qualifications and isinstance(qualifications[0], dict):
+                pass
+            else:
+                qualifications = []
+
+            # Handle required_skills
+            required_skills = job_data.get('required_skills', [])
+            if isinstance(required_skills, str):
+                required_skills = [skill.strip() for skill in required_skills.split(',') if skill.strip()]
+            elif not isinstance(required_skills, list):
+                required_skills = []
+
+            # Handle preferred_skills
+            preferred_skills = job_data.get('preferred_skills', [])
+            if isinstance(preferred_skills, str):
+                preferred_skills = [skill.strip() for skill in preferred_skills.split(',') if skill.strip()]
+            elif not isinstance(preferred_skills, list):
+                preferred_skills = []
+
+            # Handle benefits
+            benefits = job_data.get('benefits', [])
+            if isinstance(benefits, str):
+                benefits = [{"title": benefit.strip(), "description": ""} 
+                          for benefit in benefits.split(',') if benefit.strip()]
+            elif isinstance(benefits, list) and benefits and isinstance(benefits[0], dict):
+                pass
+            else:
+                benefits = []
+
+            return {
+                'id': job_data.get('id', ''),
+                'title': job_data.get('title', ''),
+                'company': job_data.get('company', ''),
+                'department': job_data.get('department', ''),
+                'location_type': job_data.get('location_type', 'remote'),
+                'location': job_data.get('location', ''),
+                'experience_level': job_data.get('experience_level', ''),
+                'overview': job_data.get('overview', ''),
+                'responsibilities': responsibilities,
+                'qualifications': qualifications,
+                'required_skills': required_skills,
+                'preferred_skills': preferred_skills,
+                'benefits': benefits,
+                'company_description': job_data.get('company_description', ''),
+                'culture_values': job_data.get('culture_values', ''),
+                'diversity_statement': job_data.get('diversity_statement', ''),
+                'status': job_data.get('status', 'draft'),
+                'created_at': job_data.get('created_at', ''),
+                'updated_at': job_data.get('updated_at', '')
+            }
+        except Exception as e:
+            logger.error(f"Error converting job data: {e}")
+            return job_data
 
     async def update_job_description(self, jd_id: str, data: Dict) -> Optional[JobDescriptionResponse]:
         """Update a job description"""

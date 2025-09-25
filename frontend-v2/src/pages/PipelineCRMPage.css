@@ -1,0 +1,164 @@
+/* Pipeline CRM Drag and Drop Styles */
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.drop-zone {
+  transition: background-color 0.2s ease;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.drop-zone:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Drag overlay styles */
+.drag-overlay {
+  transform: rotate(5deg);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Dragging state styles */
+.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+/* Drop zone highlight when dragging over */
+.drop-zone.drag-over {
+  background-color: rgba(40, 167, 69, 0.1);
+  border: 2px dashed #28a745;
+}
+
+/* Candidate card hover effects */
+.candidate-card {
+  transition: all 0.2s ease;
+}
+
+.candidate-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Stage header drag indicators */
+.stage-header {
+  position: relative;
+}
+
+.stage-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stage-header.drag-over::after {
+  opacity: 1;
+}
+
+/* Priority badge animations */
+.priority-badge {
+  transition: all 0.2s ease;
+}
+
+.priority-badge:hover {
+  transform: scale(1.1);
+}
+
+/* Loading states */
+.loading-candidate {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Success feedback */
+.success-transition {
+  animation: successPulse 0.6s ease-in-out;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+  }
+}
+
+/* Error feedback */
+.error-transition {
+  animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .drop-zone {
+    min-height: 150px;
+  }
+  
+  .candidate-card {
+    font-size: 0.875rem;
+  }
+}
+
+/* Accessibility improvements */
+.drag-handle {
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Focus styles for keyboard navigation */
+.candidate-card:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .drop-zone.drag-over {
+    border-color: #000;
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .candidate-card,
+  .drop-zone,
+  .priority-badge {
+    transition: none;
+  }
+  
+  .success-transition,
+  .error-transition {
+    animation: none;
+  }
+}

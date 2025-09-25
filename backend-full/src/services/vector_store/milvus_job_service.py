@@ -38,67 +38,64 @@ class MilvusJobService:
                 collection = Collection(self.collection_name)
                 collection.load()
                 return
+            else:
+                logger.info(f"Creating new collection {self.collection_name}")
+                # Define fields for the collection
+                fields = [
+                    FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=36, is_primary=True),
+                    FieldSchema(name="created_at", dtype=DataType.VARCHAR, max_length=64),
+                    FieldSchema(name="updated_at", dtype=DataType.VARCHAR, max_length=64),
+                    FieldSchema(name="status", dtype=DataType.VARCHAR, max_length=20),
+                    FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=256),
+                    FieldSchema(name="company", dtype=DataType.VARCHAR, max_length=256),
+                    FieldSchema(name="department", dtype=DataType.VARCHAR, max_length=256),
+                    FieldSchema(name="location_type", dtype=DataType.VARCHAR, max_length=64),
+                    FieldSchema(name="location", dtype=DataType.VARCHAR, max_length=256),
+                    FieldSchema(name="experience_level", dtype=DataType.VARCHAR, max_length=64),
+                    FieldSchema(name="overview", dtype=DataType.VARCHAR, max_length=2048),
+                    FieldSchema(name="responsibilities", dtype=DataType.VARCHAR, max_length=4096),  # JSON string
+                    FieldSchema(name="qualifications", dtype=DataType.VARCHAR, max_length=4096),  # JSON string
+                    FieldSchema(name="required_skills", dtype=DataType.VARCHAR, max_length=1024),  # JSON string
+                    FieldSchema(name="preferred_skills", dtype=DataType.VARCHAR, max_length=1024),  # JSON string
+                    FieldSchema(name="benefits", dtype=DataType.VARCHAR, max_length=2048),  # JSON string
+                    FieldSchema(name="company_description", dtype=DataType.VARCHAR, max_length=2048),
+                    FieldSchema(name="culture_values", dtype=DataType.VARCHAR, max_length=2048),
+                    FieldSchema(name="diversity_statement", dtype=DataType.VARCHAR, max_length=2048),
+                    FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=self.dim)
+                ]
+
+                # Create collection schema
+                schema = CollectionSchema(
+                    fields=fields,
+                    description="Job descriptions collection",
+                    enable_dynamic_field=True
+                )
+
+                # Create collection
+                collection = Collection(
+                    name=self.collection_name,
+                    schema=schema,
+                    using='default',
+                    shards_num=2
+                )
+
+                # Create index for vector field
+                index_params = {
+                    "metric_type": "L2",
+                    "index_type": "IVF_FLAT",
+                    "params": {"nlist": 128}
+                }
+                collection.create_index(field_name="embedding", index_params=index_params)
+                
+                # Load the collection into memory
+                collection.load()
+                
+                logger.info(f"Successfully created collection {self.collection_name} with index")
+
         except Exception as e:
             logger.warning(f"Failed to connect to Milvus: {e}")
             logger.warning("Running in offline mode - vector operations will be disabled")
             self.offline_mode = True
-            return
-
-            # Define fields for the collection
-            fields = [
-                FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=36, is_primary=True),
-                FieldSchema(name="created_at", dtype=DataType.VARCHAR, max_length=64),
-                FieldSchema(name="updated_at", dtype=DataType.VARCHAR, max_length=64),
-                FieldSchema(name="status", dtype=DataType.VARCHAR, max_length=20),
-                FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=256),
-                FieldSchema(name="company", dtype=DataType.VARCHAR, max_length=256),
-                FieldSchema(name="department", dtype=DataType.VARCHAR, max_length=256),
-                FieldSchema(name="location_type", dtype=DataType.VARCHAR, max_length=64),
-                FieldSchema(name="location", dtype=DataType.VARCHAR, max_length=256),
-                FieldSchema(name="experience_level", dtype=DataType.VARCHAR, max_length=64),
-                FieldSchema(name="overview", dtype=DataType.VARCHAR, max_length=2048),
-                FieldSchema(name="responsibilities", dtype=DataType.VARCHAR, max_length=4096),  # JSON string
-                FieldSchema(name="qualifications", dtype=DataType.VARCHAR, max_length=4096),  # JSON string
-                FieldSchema(name="required_skills", dtype=DataType.VARCHAR, max_length=1024),  # JSON string
-                FieldSchema(name="preferred_skills", dtype=DataType.VARCHAR, max_length=1024),  # JSON string
-                FieldSchema(name="benefits", dtype=DataType.VARCHAR, max_length=2048),  # JSON string
-                FieldSchema(name="company_description", dtype=DataType.VARCHAR, max_length=2048),
-                FieldSchema(name="culture_values", dtype=DataType.VARCHAR, max_length=2048),
-                FieldSchema(name="diversity_statement", dtype=DataType.VARCHAR, max_length=2048),
-                FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=self.dim)
-            ]
-
-            # Create collection schema
-            schema = CollectionSchema(
-                fields=fields,
-                description="Job descriptions collection",
-                enable_dynamic_field=True
-            )
-
-            # Create collection
-            collection = Collection(
-                name=self.collection_name,
-                schema=schema,
-                using='default',
-                shards_num=2
-            )
-
-            # Create index for vector field
-            index_params = {
-                "metric_type": "L2",
-                "index_type": "IVF_FLAT",
-                "params": {"nlist": 128}
-            }
-            collection.create_index(field_name="embedding", index_params=index_params)
-            
-            # Load the collection into memory
-            collection.load()
-            
-            logger.info(f"Successfully created collection {self.collection_name} with index")
-
-        except Exception as e:
-            logger.error(f"Error initializing Milvus collection: {str(e)}")
-            raise
 
     def _prepare_data_for_insert(self, job_data: Dict) -> Dict:
         """Prepare job description data for insertion into Milvus"""

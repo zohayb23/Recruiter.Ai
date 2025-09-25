@@ -1,0 +1,14 @@
+[Unit]
+Description=Mass Mailing System
+After=network.target
+
+[Service]
+Type=forking
+User=fayzanbhatti
+WorkingDirectory=/home/fayzanbhatti/mass_mailing_production
+ExecStart=/home/fayzanbhatti/mass_mailing_production/start_production.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

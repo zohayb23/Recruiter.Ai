@@ -15,23 +15,14 @@ const JobListingsPage: React.FC = () => {
   const loadJobs = async () => {
     try {
       setLoading(true);
-      const response = await getJobDescriptions();
+      const jobsArray = await getJobDescriptions();
       
-      // Ensure response is an array and handle different response formats
-      let jobsArray: JobDescriptionResponse[] = [];
-      
-      if (Array.isArray(response)) {
-        jobsArray = response;
-      } else if (response && typeof response === 'object' && 'data' in response) {
-        // Handle case where response is wrapped in a data property
-        jobsArray = Array.isArray(response.data) ? response.data : [];
-      } else {
-        console.warn('Unexpected response format:', response);
-        jobsArray = [];
-      }
+      console.log('Loaded jobs:', jobsArray);
       
       // Filter to only show published jobs
       const publishedJobs = jobsArray.filter(job => job.status === 'published');
+      console.log('Published jobs:', publishedJobs);
+      
       setJobs(publishedJobs);
     } catch (err: any) {
       console.error('Error loading jobs:', err);
@@ -107,6 +98,8 @@ const JobListingsPage: React.FC = () => {
           ) : jobs.length === 0 ? (
             <div className="text-center py-4 text-muted">
               No job postings found
+              <br />
+              <small className="text-muted">Debug: {jobs.length} jobs loaded</small>
             </div>
           ) : (
             <div className="table-responsive">
