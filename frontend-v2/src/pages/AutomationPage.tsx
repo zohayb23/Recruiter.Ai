@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Form, Row, Col, Table, Badge, Alert, Modal, Accordion, Tabs, Tab } from 'react-bootstrap';
-import { environment } from '../config/environment';
+import { ENV } from '../config/environment';
 
 interface AutomationTrigger {
   trigger_type: string;
@@ -109,7 +109,7 @@ const AutomationPage: React.FC = () => {
     ]
   });
 
-  const massMailingUrl = environment.getMassMailingUrl();
+  const massMailingUrl = ENV.getMassMailingUrl();
 
   useEffect(() => {
     loadCampaigns();

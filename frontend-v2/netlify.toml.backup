@@ -2,36 +2,25 @@
   publish = "dist"
   command = "npm run build"
 
-# Handle static assets first
+# Mass Mailing API redirects to Mass Mailing Backend (port 8810) - Must be first to avoid conflicts
 [[redirects]]
-  from = "/favicon.ico"
-  to = "/favicon.ico"
-  status = 200
-
-[[redirects]]
-  from = "/startbootstrap-sb-admin-2-gh-pages/img/*"
-  to = "/assets/:splat"
-  status = 200
-
-# Mass Mailing API redirects - Handle double /api path
-[[redirects]]
-  from = "/api/mass-mailing/api/*"
+  from = "/api/mass-mailing/*"
   to = "http://34.31.224.102:8810/api/:splat"
   status = 200
   force = true
   timeout = 60
   headers = {Access-Control-Allow-Origin = "*"}
 
-# CRM API redirects - Handle double /api path  
+# CRM API redirects to CRM Backend (port 8809) - Must be second to avoid conflicts
 [[redirects]]
-  from = "/api/crm/api/*"
+  from = "/api/crm/*"
   to = "http://34.31.224.102:8809/api/:splat"
   status = 200
   force = true
   timeout = 60
   headers = {Access-Control-Allow-Origin = "*"}
 
-# Main API redirects to Milvus Integration (port 8804)
+# Main API redirects to Milvus Integration (port 8804) - Must be last to catch remaining API calls
 [[redirects]]
   from = "/api/*"
   to = "http://34.31.224.102:8804/api/:splat"
@@ -48,12 +37,6 @@
   force = true
   timeout = 120
   headers = {Access-Control-Allow-Origin = "*"}
-
-# SPA routing - catch all routes and serve index.html
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
 
 [[headers]]
   for = "/*"

@@ -399,7 +399,7 @@ const PipelineCRMPage: React.FC = () => {
     }
 
     // Check if we're dropping on a stage (not another candidate)
-    const targetStage = pipelineStages.find(stage => stage.id === over.id);
+    const targetStage = pipelineStages?.find(stage => stage.id === over.id);
     if (targetStage) {
       const candidateId = active.id as string;
       const currentCandidate = candidatePipelines.find(cp => cp.candidate_id === candidateId);
@@ -439,7 +439,7 @@ const PipelineCRMPage: React.FC = () => {
 
   // Get candidates in a specific stage
   const getCandidatesInStage = (stageId: string) => {
-    return candidatePipelines.filter(cp => cp.current_stage === stageId);
+    return candidatePipelines?.filter(cp => cp.current_stage === stageId) || [];
   };
 
   // Get priority badge color
@@ -506,7 +506,7 @@ const PipelineCRMPage: React.FC = () => {
             onDragOver={handleDragOver}
           >
             <Row>
-              {pipelineStages.map((stage) => {
+              {pipelineStages && pipelineStages.length > 0 ? pipelineStages.map((stage) => {
                 const candidatesInStage = getCandidatesInStage(stage.id);
                 return (
                   <Col md={2} key={stage.id} className="mb-3">
@@ -551,7 +551,15 @@ const PipelineCRMPage: React.FC = () => {
                     </Card>
                   </Col>
                 );
-              })}
+              }) : (
+                <Col md={12} className="text-center">
+                  <Card>
+                    <Card.Body>
+                      <p className="text-muted">No pipeline stages found. Loading...</p>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              )}
             </Row>
             
             <DragOverlay>
@@ -627,7 +635,7 @@ const PipelineCRMPage: React.FC = () => {
                   <Card.Body>
                     <Row>
                       {Object.entries(analytics.stage_distribution).map(([stageId, count]) => {
-                        const stage = pipelineStages.find(s => s.id === stageId);
+                        const stage = pipelineStages?.find(s => s.id === stageId);
                         return (
                           <Col md={2} key={stageId} className="text-center">
                             <div 

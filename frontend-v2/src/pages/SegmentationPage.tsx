@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Form, Row, Col, Table, Badge, Alert, Modal, Accordion } from 'react-bootstrap';
-import { environment } from '../config/environment';
+import { ENV } from '../config/environment';
 
 interface SegmentationRule {
   field: string;
@@ -72,7 +72,7 @@ const SegmentationPage: React.FC = () => {
     ]
   });
 
-  const massMailingUrl = environment.getMassMailingUrl();
+  const massMailingUrl = ENV.getMassMailingUrl();
 
   useEffect(() => {
     loadSegmentations();

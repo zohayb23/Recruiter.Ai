@@ -406,10 +406,10 @@ npm test
 - Ensure environment variables are set correctly
 
 ### 2. **OpenAI API Errors**
-- Verify API key is correctly set in `.env`
-- Check API key has sufficient credits
+   - Verify API key is correctly set in `.env`
+   - Check API key has sufficient credits
 - Ensure using GPT-4 Turbo for JSON responses
-- Handle rate limits with exponential backoff
+   - Handle rate limits with exponential backoff
 
 ### 3. **Milvus Connection Issues**
 - Ensure Milvus VM is running: `gcloud compute instances start milvus-vm`
@@ -422,9 +422,9 @@ npm test
 - Verify recipient email addresses are valid
 
 ### 5. **Frontend Build Issues**
-- Clear node_modules: `rm -rf node_modules`
-- Reinstall dependencies: `npm install`
-- Clear Vite cache: `npm run clean`
+   - Clear node_modules: `rm -rf node_modules`
+   - Reinstall dependencies: `npm install`
+   - Clear Vite cache: `npm run clean`
 
 ### 6. **Production Deployment Issues**
 - Verify GCP authentication: `gcloud auth login`

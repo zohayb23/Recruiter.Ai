@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Form, Row, Col, Table, Badge, ProgressBar, Alert, Modal } from 'react-bootstrap';
-import { environment } from '../config/environment';
+import { ENV } from '../config/environment';
 
 interface ABTest {
   id: string;
@@ -84,7 +84,7 @@ const ABTestingPage: React.FC = () => {
     candidate_ids: [] as string[]
   });
 
-  const massMailingUrl = environment.getMassMailingUrl();
+  const massMailingUrl = ENV.getMassMailingUrl();
 
   useEffect(() => {
     loadABTests();
