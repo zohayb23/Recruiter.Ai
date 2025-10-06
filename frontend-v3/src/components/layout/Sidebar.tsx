@@ -29,11 +29,11 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange }) => {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-      jobs: true,
-      candidates: true,
-      marketing: true,
-      ai: true,
-      database: true
+      jobs: false,
+      candidates: false,
+      marketing: false,
+      ai: false,
+      database: false
     });
 
   const menuSections = [
