@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiCall } from '../utils/apiConfig';
 import {
   Users,
   Plus,
@@ -81,7 +82,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     },
     recentActivity: []
   });
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,9 +95,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         // Fetch all data in parallel
         const [healthResponse, crmResponse, campaignsResponse] = await Promise.all([
-          fetch('http://localhost:8804/health'),
-          fetch('http://localhost:8804/api/crm/pipeline'),
-          fetch('http://localhost:8804/api/mass-mailing/campaigns')
+          apiCall('/health'),
+          apiCall('/api/crm/pipeline'),
+          apiCall('/api/mass-mailing/campaigns')
         ]);
 
         // Update backend status
@@ -247,7 +248,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   // Simple metric card component
   const MetricCard = ({ title, value, change, icon, color, helpText }: any) => (
     <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
-      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4">
         <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
           color === 'primary' ? 'bg-primary-100' :
           color === 'success' ? 'bg-success-100' :
@@ -259,15 +260,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             color === 'success' ? 'text-success-600' :
             color === 'warning' ? 'text-warning-600' :
             'text-purple-600'
-          }`}>
-            {icon}
+            }`}>
+              {icon}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
           <div className={`flex items-center space-x-1 text-sm ${
             change.type === 'increase' ? 'text-success-600' : 'text-warning-600'
-          }`}>
-            {change.type === 'increase' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+            }`}>
+              {change.type === 'increase' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
             <span>{change.value}%</span>
           </div>
           {helpText && <HelpText text={helpText} />}

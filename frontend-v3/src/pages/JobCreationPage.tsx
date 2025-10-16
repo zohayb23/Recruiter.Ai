@@ -13,6 +13,7 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
+import { apiCall } from '../utils/apiConfig';
 
 const JobCreationPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -28,7 +29,10 @@ const JobCreationPage: React.FC = () => {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedDescription, setGeneratedDescription] = useState('');
+  const [generatedJobData, setGeneratedJobData] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -71,58 +75,111 @@ const JobCreationPage: React.FC = () => {
     setError(null);
 
     try {
-      // Simulate API call to generate job description
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Call the real backend API using apiCall helper
+      const response = await apiCall('/api/job-descriptions/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.jobTitle,
+          company: formData.company || 'Our Company',
+          department: formData.department || 'General',
+          location: formData.location,
+          location_type: formData.locationType.toLowerCase(),
+          experience_level: formData.experienceLevel || 'Mid Level (3-5 years)',
+          key_skills: formData.keySkills
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
       
-      const mockDescription = `
-# ${formData.jobTitle}
-
-## Company Overview
-${formData.company || 'Our company'} is a leading technology company focused on innovation and growth. We're looking for a talented ${formData.jobTitle} to join our ${formData.department || 'team'}.
-
-## Job Description
-We are seeking a highly motivated and skilled ${formData.jobTitle} to join our dynamic team. The ideal candidate will have strong technical skills and a passion for delivering high-quality solutions.
-
-## Key Responsibilities
-- Design, develop, and maintain software applications
-- Collaborate with cross-functional teams to deliver projects
-- Write clean, maintainable, and efficient code
-- Participate in code reviews and technical discussions
-- Stay up-to-date with industry trends and best practices
-
-## Required Qualifications
-- Bachelor's degree in Computer Science or related field
-- ${formData.experienceLevel || '3+ years'} of relevant experience
-- Strong programming skills in ${formData.keySkills.join(', ') || 'modern programming languages'}
-- Experience with software development methodologies
-- Excellent problem-solving and communication skills
-
-## Preferred Qualifications
-- Experience with cloud platforms and services
-- Knowledge of agile development practices
-- Previous experience in a fast-paced environment
-- Strong analytical and critical thinking skills
-
-## Location
-${formData.locationType === 'Remote' ? 'This is a remote position' : `This position is based in ${formData.location}`}
-
-## Benefits
-- Competitive salary and equity package
-- Comprehensive health, dental, and vision insurance
-- Flexible work arrangements
-- Professional development opportunities
-- Collaborative and inclusive work environment
-
-## How to Apply
-Please submit your resume and cover letter through our application portal. We look forward to hearing from you!
-      `;
-
-      setGeneratedDescription(mockDescription);
+      if (data.success && data.job_description) {
+        setGeneratedDescription(data.job_description);
+        setGeneratedJobData(data.job_data);
+      } else {
+        throw new Error(data.message || 'Failed to generate job description');
+      }
     } catch (error) {
+      console.error('Error generating job description:', error);
       setError('Failed to generate job description. Please try again.');
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const saveJobDescription = async () => {
+    if (!generatedJobData) {
+      setError('No job data to save');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await apiCall('/api/job-descriptions/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(generatedJobData),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess('Job description saved successfully!');
+        // Don't reset form - keep the content visible
+        // Only clear success message after 3 seconds
+        setTimeout(() => {
+          setSuccess(null);
+        }, 3000);
+      } else {
+        throw new Error(data.message || 'Failed to save job description');
+      }
+    } catch (error) {
+      console.error('Error saving job description:', error);
+      if (error.name === 'AbortError') {
+        setError('Save operation timed out. Please try again.');
+      } else {
+        setError('Failed to save job description. Please try again.');
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const clearForm = () => {
+    setFormData({
+      jobTitle: '',
+      company: '',
+      department: '',
+      locationType: 'Remote',
+      location: 'Anywhere',
+      experienceLevel: '',
+      keySkills: [],
+      skillInput: ''
+    });
+    setGeneratedDescription('');
+    setGeneratedJobData(null);
+    setError(null);
+    setSuccess(null);
   };
 
   return (
@@ -161,6 +218,21 @@ Please submit your resume and cover letter through our application portal. We lo
             <div>
               <span className="text-red-800 font-medium">Error</span>
               <p className="text-red-700 text-sm mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Banner */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle size={16} className="text-green-600" />
+            </div>
+            <div>
+              <span className="text-green-800 font-medium">Success</span>
+              <p className="text-green-700 text-sm mt-1">{success}</p>
             </div>
           </div>
         </div>
@@ -353,11 +425,29 @@ Please submit your resume and cover letter through our application portal. We lo
               </div>
               
               <div className="flex space-x-3 mt-6">
-                <button className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-2 px-4 rounded-lg transition-colors">
-                  Save & Publish
+                <button 
+                  onClick={saveJobDescription}
+                  disabled={isSaving}
+                  className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={16} />
+                      <span>Save & Publish</span>
+                    </>
+                  )}
                 </button>
-                <button className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 px-4 rounded-lg transition-colors">
-                  Edit Description
+                <button 
+                  onClick={clearForm}
+                  className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors flex items-center space-x-2"
+                >
+                  <X size={16} />
+                  <span>Clear Form</span>
                 </button>
                 <button className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors">
                   <FileText size={16} />

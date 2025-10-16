@@ -3,6 +3,8 @@
  * Direct connection to GCP Milvus instance for frontend operations
  */
 
+import { API_BASE_URL } from '../utils/apiConfig';
+
 export interface MilvusConnection {
   host: string;
   port: string;
@@ -36,7 +38,7 @@ class MilvusService {
     lastChecked: new Date().toISOString()
   };
 
-  private baseUrl = 'http://localhost:8804'; // Backend proxy for Milvus operations
+  private baseUrl = API_BASE_URL;
 
   /**
    * Check Milvus connection status

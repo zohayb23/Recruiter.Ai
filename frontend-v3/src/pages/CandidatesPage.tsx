@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   Search,
@@ -21,21 +22,30 @@ import {
   BarChart3,
   Target,
   CheckCircle,
-  XCircle
+  XCircle,
+  ChevronUp,
+  ChevronsUpDown,
+  Trash2,
+  Briefcase
 } from 'lucide-react';
 import { candidateApiService, type Candidate } from '../services/candidateApi';
+
+type SortField = 'name' | 'position' | 'status' | 'experienceYears' | 'jobMatchScore' | 'lastActivity';
+type SortDirection = 'asc' | 'desc' | null;
 
 interface CandidatesPageProps {
   onNavigate?: (page: string) => void;
 }
 
 const CandidatesPage: React.FC<CandidatesPageProps> = ({ onNavigate }) => {
+  const navigate = useNavigate();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>('lastActivity');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Fetch candidates from API
   useEffect(() => {
@@ -102,6 +112,34 @@ const CandidatesPage: React.FC<CandidatesPageProps> = ({ onNavigate }) => {
     fetchCandidates();
   }, []);
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Cycle through: desc -> asc -> null (no sort)
+      if (sortDirection === 'desc') {
+        setSortDirection('asc');
+      } else if (sortDirection === 'asc') {
+        setSortDirection(null);
+      } else {
+        setSortDirection('desc');
+      }
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ChevronsUpDown size={16} className="text-gray-400" />;
+    }
+    if (sortDirection === 'asc') {
+      return <ChevronUp size={16} className="text-gray-600" />;
+    } else if (sortDirection === 'desc') {
+      return <ChevronDown size={16} className="text-gray-600" />;
+    }
+    return <ChevronsUpDown size={16} className="text-gray-400" />;
+  };
+
   const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch = candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -110,6 +148,46 @@ const CandidatesPage: React.FC<CandidatesPageProps> = ({ onNavigate }) => {
     const matchesStatus = selectedStatus === 'all' || candidate.status.toLowerCase() === selectedStatus.toLowerCase();
     
     return matchesSearch && matchesStatus;
+  });
+
+  const sortedCandidates = [...filteredCandidates].sort((a, b) => {
+    if (!sortDirection) return 0;
+
+    let aValue: string | number;
+    let bValue: string | number;
+
+    switch (sortField) {
+      case 'name':
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
+        break;
+      case 'position':
+        aValue = a.position.toLowerCase();
+        bValue = b.position.toLowerCase();
+        break;
+      case 'status':
+        aValue = a.status.toLowerCase();
+        bValue = b.status.toLowerCase();
+        break;
+      case 'experienceYears':
+        aValue = a.experienceYears;
+        bValue = b.experienceYears;
+        break;
+      case 'jobMatchScore':
+        aValue = a.jobMatchScore;
+        bValue = b.jobMatchScore;
+        break;
+      case 'lastActivity':
+        aValue = new Date(a.lastActivity).getTime();
+        bValue = new Date(b.lastActivity).getTime();
+        break;
+      default:
+        return 0;
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
   });
 
   const getStatusColor = (status: string) => {
@@ -273,100 +351,153 @@ const CandidatesPage: React.FC<CandidatesPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Candidates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCandidates.map((candidate) => (
-            <div key={candidate.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <User size={24} className="text-primary-600" />
+        {/* Candidates Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th 
+                  className="text-left py-3 px-4 font-medium text-gray-900 cursor-pointer hover:bg-gray-50 select-none"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Name</span>
+                    {getSortIcon('name')}
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{candidate.name}</h3>
-                    <p className="text-sm text-gray-600">{candidate.position}</p>
+                </th>
+                <th 
+                  className="text-left py-3 px-4 font-medium text-gray-900 cursor-pointer hover:bg-gray-50 select-none"
+                  onClick={() => handleSort('position')}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Position</span>
+                    {getSortIcon('position')}
                   </div>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(candidate.status)}`}>
-                  {candidate.status}
-                </span>
-              </div>
-
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Mail size={14} />
-                  <span className="truncate">{candidate.email}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <MapPin size={14} />
-                  <span>{candidate.location}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <span>Experience:</span>
-                  <span className="font-medium">{candidate.experienceYears}</span>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Match Score</span>
-                  <span className={`text-sm font-semibold ${getScoreColor(candidate.jobMatchScore)}`}>
-                    {candidate.jobMatchScore}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full ${getScoreColor(candidate.jobMatchScore).replace('text-', 'bg-')}`}
-                    style={{ width: `${candidate.jobMatchScore}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <div className="text-sm font-medium text-gray-700 mb-2">Top Skills</div>
-                <div className="flex flex-wrap gap-1">
-                  {candidate.skills.slice(0, 3).map((skill, index) => (
-                    <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                      {skill}
+                </th>
+                <th 
+                  className="text-left py-3 px-4 font-medium text-gray-900 cursor-pointer hover:bg-gray-50 select-none"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Status</span>
+                    {getSortIcon('status')}
+                  </div>
+                </th>
+                <th 
+                  className="text-left py-3 px-4 font-medium text-gray-900 cursor-pointer hover:bg-gray-50 select-none"
+                  onClick={() => handleSort('experienceYears')}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Experience</span>
+                    {getSortIcon('experienceYears')}
+                  </div>
+                </th>
+                <th 
+                  className="text-left py-3 px-4 font-medium text-gray-900 cursor-pointer hover:bg-gray-50 select-none"
+                  onClick={() => handleSort('jobMatchScore')}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Match Score</span>
+                    {getSortIcon('jobMatchScore')}
+                  </div>
+                </th>
+                <th 
+                  className="text-left py-3 px-4 font-medium text-gray-900 cursor-pointer hover:bg-gray-50 select-none"
+                  onClick={() => handleSort('lastActivity')}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Last Activity</span>
+                    {getSortIcon('lastActivity')}
+                  </div>
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedCandidates.map((candidate) => (
+                <tr key={candidate.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="py-4 px-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                        <User size={20} className="text-primary-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{candidate.name}</div>
+                        <div className="text-sm text-gray-500">{candidate.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center space-x-2">
+                      <Briefcase size={16} className="text-gray-400" />
+                      <span className="text-gray-900">{candidate.position}</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(candidate.status)}`}>
+                      {candidate.status}
                     </span>
-                  ))}
-                  {candidate.skills.length > 3 && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                      +{candidate.skills.length - 3} more
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full whitespace-nowrap inline-block">
+                      {candidate.experienceYears} years
                     </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setSelectedCandidate(candidate)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="View Details"
-                  >
-                    <Eye size={16} />
-                  </button>
-                  <button
-                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                    title="Edit"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                    title="More Options"
-                  >
-                    <MoreVertical size={16} />
-                  </button>
-                </div>
-                <span className="text-xs text-gray-500">ID: {candidate.id.slice(0, 8)}...</span>
-              </div>
-            </div>
-          ))}
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-16 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full ${getScoreColor(candidate.jobMatchScore).replace('text-', 'bg-')}`}
+                          style={{ width: `${candidate.jobMatchScore}%` }}
+                        ></div>
+                      </div>
+                      <span className={`text-sm font-semibold ${getScoreColor(candidate.jobMatchScore)}`}>
+                        {candidate.jobMatchScore}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center space-x-2">
+                      <Calendar size={16} className="text-gray-400" />
+                      <span className="text-gray-900">{new Date(candidate.lastActivity).toLocaleDateString()}</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => navigate(`/candidate-details/${candidate.id}`)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="View Details"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <button
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <button
+                        className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        title="More Options"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        {filteredCandidates.length === 0 && (
+        {sortedCandidates.length === 0 && (
           <div className="text-center py-12">
             <Users size={48} className="text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No candidates found</h3>
@@ -375,93 +506,6 @@ const CandidatesPage: React.FC<CandidatesPageProps> = ({ onNavigate }) => {
         )}
       </div>
 
-      {/* Candidate Detail Modal */}
-      {selectedCandidate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Candidate Details</h2>
-                <button
-                  onClick={() => setSelectedCandidate(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle size={24} />
-                </button>
-              </div>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
-                  <User size={32} className="text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{selectedCandidate.name}</h3>
-                  <p className="text-gray-600">{selectedCandidate.position}</p>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-2 border ${getStatusColor(selectedCandidate.status)}`}>
-                    {selectedCandidate.status}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Contact Information</h4>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div className="flex items-center space-x-2">
-                      <Mail size={14} />
-                      <span>{selectedCandidate.email}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Phone size={14} />
-                      <span>{selectedCandidate.phone}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <MapPin size={14} />
-                      <span>{selectedCandidate.location}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Profile Details</h4>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div>Experience: {selectedCandidate.experienceYears}</div>
-                    <div>Match Score: <span className={getScoreColor(selectedCandidate.jobMatchScore)}>{selectedCandidate.jobMatchScore}%</span></div>
-                    <div>Last Activity: {selectedCandidate.lastActivity}</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Skills</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCandidate.skills.map((skill: string, index: number) => (
-                    <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex space-x-3 pt-4">
-                <button 
-                  onClick={() => {
-                    setSelectedCandidate(null);
-                    onNavigate?.('candidate-profile');
-                  }}
-                  className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-2 px-4 rounded-lg transition-colors"
-                >
-                  View Full Profile
-                </button>
-                <button className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 px-4 rounded-lg transition-colors">
-                  Schedule Interview
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

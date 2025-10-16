@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8804';
+import { API_BASE_URL } from '../utils/apiConfig';
 
 // Create axios instance for candidate API calls
 const candidateApi = axios.create({
@@ -21,11 +20,21 @@ export interface Candidate {
   status: 'Applied' | 'Shortlisted' | 'Interviewed' | 'Rejected';
   jobMatchScore: number;
   experienceYears: string;
+  experience_years?: string;
   skills: string[];
   lastActivity: string;
   resumeId: string;
   position: string;
   description?: string;
+  score?: number;
+  summary?: string;
+  work_experience?: Array<{
+    title: string;
+    company: string;
+    period: string;
+    description: string[];
+    skills: string[];
+  }>;
   linkedin?: string;
   github?: string;
   videoScore?: number;
@@ -44,6 +53,7 @@ export interface Candidate {
     institution: string;
     period: string;
     gpa: string;
+    year?: string;
   }>;
   certifications?: Array<{
     name: string;
