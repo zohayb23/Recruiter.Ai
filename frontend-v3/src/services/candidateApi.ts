@@ -103,6 +103,14 @@ export const candidateApiService = {
       const response = await candidateApi.get('/api/candidates');
       const candidatesData = response.data.candidates;
       
+      // Log the response for debugging
+      console.log('📊 API Response:', {
+        success: response.data.success,
+        total: response.data.total,
+        milvus_connected: response.data.milvus_connected,
+        message: response.data.message
+      });
+      
       // Transform Milvus candidate data to frontend format
       return candidatesData.map((candidate: any) => ({
         id: candidate.id,

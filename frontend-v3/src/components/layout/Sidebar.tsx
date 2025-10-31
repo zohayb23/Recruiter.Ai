@@ -92,7 +92,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange }) => {
         label: 'AI Features',
         icon: FlaskConical,
         items: [
-          { id: 'semantic-search', label: 'Semantic Search', icon: BarChart3 },
+          { id: 'analytics', label: 'Analytics Dashboard', icon: BarChart3 },
+          { id: 'semantic-search', label: 'Semantic Search', icon: Search },
           { id: 'keyword-generator', label: 'Keyword Generator', icon: Hash },
           { id: 'enhanced-search', label: 'Enhanced Search', icon: Search },
         ]

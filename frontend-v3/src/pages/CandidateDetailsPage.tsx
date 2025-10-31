@@ -28,9 +28,9 @@ import {
   Share2,
   Copy,
   Edit,
+  MessageCircle,
   Trash2,
   Download,
-  MessageCircle,
   Video,
   FileText,
   BarChart3,
@@ -77,6 +77,7 @@ interface Candidate {
   work_experience: WorkExperience[];
   education: Education[];
   summary: string;
+  file_path?: string;
 }
 
 const CandidateDetailsPage: React.FC = () => {
@@ -111,8 +112,10 @@ const CandidateDetailsPage: React.FC = () => {
         const data = await response.json();
         const candidates = data.candidates;
         
-        // Find the candidate with matching ID
-        const candidateData = candidates.find((c: any) => c.id === candidateId);
+        // Find the candidate with matching ID (try both id and resume_id fields)
+        const candidateData = candidates.find((c: any) => 
+          c.id === candidateId || c.resume_id === candidateId
+        );
         
         if (!candidateData) {
           throw new Error('Candidate not found');
@@ -120,8 +123,8 @@ const CandidateDetailsPage: React.FC = () => {
         
         // Transform the data to match the expected format
         const transformedCandidate: Candidate = {
-          id: candidateData.id,
-          name: candidateData.name,
+          id: candidateData.id || candidateData.resume_id,
+          name: candidateData.name || candidateData.full_name,
           email: candidateData.email || 'No email provided',
           phone: candidateData.phone || 'No phone provided',
           location: candidateData.location,
@@ -134,9 +137,16 @@ const CandidateDetailsPage: React.FC = () => {
           resumeText: candidateData.summary || '',
           createdAt: candidateData.created_at,
           updatedAt: candidateData.updated_at,
-          work_experience: candidateData.work_experience || [],
+          work_experience: (candidateData.work_experience || []).map((exp: any) => ({
+            ...exp,
+            title: exp.title?.replace(/See resume/gi, '').replace(/\s+/g, ' ').trim() || exp.title,
+            description: exp.description?.replace(/See resume/gi, '').replace(/\s+/g, ' ').trim() || exp.description,
+            company: exp.company?.replace(/See resume/gi, '').replace(/\s+/g, ' ').trim() || exp.company,
+            location: exp.location?.replace(/See resume/gi, '').replace(/\s+/g, ' ').trim() || exp.location
+          })),
           education: candidateData.education || [],
-          summary: candidateData.summary || ''
+          summary: candidateData.summary || '',
+          file_path: candidateData.file_path
         };
         
         setCandidate(transformedCandidate);
@@ -193,41 +203,42 @@ const CandidateDetailsPage: React.FC = () => {
   };
 
   const handleViewResume = () => {
-    if (candidate?.resumeText) {
-      // Open resume in a new window
-      const newWindow = window.open('', '_blank');
-      if (newWindow) {
-        newWindow.document.write(`
-          <html>
-            <head><title>Resume - ${candidate.name}</title></head>
-            <body style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-              <h1>${candidate.name} - Resume</h1>
-              <div style="white-space: pre-line;">${candidate.resumeText}</div>
-            </body>
-          </html>
-        `);
-        newWindow.document.close();
-        showNotification('success', 'Resume opened in new window');
-      }
+    if (candidate?.id) {
+      // Open resume PDF in a new tab
+      const resumeUrl = `http://localhost:8804/api/resume/${candidate.id}/file`;
+      window.open(resumeUrl, '_blank');
+      showNotification('success', 'Resume opened in new tab');
     } else {
       showNotification('error', 'No resume available for this candidate');
     }
   };
 
   const handleDownloadCV = () => {
-    if (candidate?.resumeText) {
-      const blob = new Blob([candidate.resumeText], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
+    if (candidate?.id) {
+      // Download the actual resume file in its original format
+      const resumeUrl = `http://localhost:8804/api/resume/${candidate.id}/file`;
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `${candidate.name.replace(/\s+/g, '_')}_Resume.txt`;
+      a.href = resumeUrl;
+      
+      // Use original file extension if available, otherwise default to .docx
+      const fileExtension = candidate.file_path ? 
+        candidate.file_path.split('.').pop() || 'docx' : 'docx';
+      a.download = `${candidate.name.replace(/\s+/g, '_')}_Resume.${fileExtension}`;
+      a.target = '_blank';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
       showNotification('success', 'Resume downloaded successfully');
     } else {
       showNotification('error', 'No resume available for download');
+    }
+  };
+
+  const handleStartChat = () => {
+    if (candidate?.id) {
+      navigate(`/candidate-chat/${candidate.id}`);
+    } else {
+      showNotification('error', 'Cannot start chat - candidate ID not available');
     }
   };
 
@@ -697,6 +708,13 @@ const CandidateDetailsPage: React.FC = () => {
                 >
                   <Download size={20} />
                   <span>Download CV</span>
+                </button>
+                <button 
+                  onClick={handleStartChat}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 font-semibold"
+                >
+                  <MessageCircle size={20} />
+                  <span>Start AI Chat</span>
                 </button>
               </div>
             </div>

@@ -10,6 +10,7 @@ import JobDetailsPage from './pages/JobDetailsPage';
 import CandidatesPage from './pages/CandidatesPage';
 import CandidateDetailsPage from './pages/CandidateDetailsPage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
+import CandidateChatPage from './pages/CandidateChatPage';
 import PipelineCRMPage from './pages/PipelineCRMPage';
 import MassMailingPage from './pages/MassMailingPage';
 import ABTestingPage from './pages/ABTestingPage';
@@ -23,6 +24,7 @@ import KeywordGeneratorPage from './pages/KeywordGeneratorPage';
 import EnhancedSearchPage from './pages/EnhancedSearchPage';
 import SemanticSearchPage from './pages/SemanticSearchPage';
 import MilvusDatabasePage from './pages/MilvusDatabasePage';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 
 // Page title mapping
 const pageTitles: Record<string, string> = {
@@ -36,6 +38,7 @@ const pageTitles: Record<string, string> = {
   '/candidates': 'Candidates',
   '/candidate-details/:candidateId': 'Candidate Details',
   '/candidate-profile': 'Candidate Profile',
+  '/candidate-chat/:candidateId': 'Candidate Chat',
   '/pipeline-crm': 'Pipeline CRM',
   '/candidate-scoring': 'Candidate Scoring',
   '/duplicate-detection': 'Duplicate Detection',
@@ -46,6 +49,7 @@ const pageTitles: Record<string, string> = {
   '/automation': 'Automation',
   '/semantic-search': 'Semantic Search',
   '/keyword-generator': 'Keyword Generator',
+  '/analytics': 'Analytics Dashboard',
   '/enhanced-search': 'Enhanced Search',
   '/milvus-database': 'Milvus Database'
 };
@@ -62,6 +66,7 @@ const pageSubtitles: Record<string, string> = {
   '/candidates': 'Track and manage candidate profiles',
   '/candidate-details/:candidateId': 'View detailed candidate information and profile',
   '/candidate-profile': 'Detailed candidate profile and assessment',
+  '/candidate-chat/:candidateId': 'AI-powered candidate conversation and assessment',
   '/pipeline-crm': 'Manage candidate pipeline stages and track progress',
   '/candidate-scoring': 'AI-powered candidate evaluation and scoring',
   '/duplicate-detection': 'Identify and manage duplicate candidate profiles',
@@ -135,6 +140,7 @@ const AppRouter: React.FC = () => {
         <Route path="/candidates" element={<CandidatesPage onNavigate={handlePageChange} />} />
         <Route path="/candidate-details/:candidateId" element={<CandidateDetailsPage />} />
         <Route path="/candidate-profile" element={<CandidateProfilePage />} />
+        <Route path="/candidate-chat/:candidateId" element={<CandidateChatPage />} />
         <Route path="/pipeline-crm" element={<PipelineCRMPage />} />
         <Route path="/candidate-scoring" element={<CandidateScoringPage />} />
         <Route path="/duplicate-detection" element={<DuplicateDetectionPage />} />
@@ -145,6 +151,7 @@ const AppRouter: React.FC = () => {
         <Route path="/automation" element={<AutomationPage />} />
         <Route path="/semantic-search" element={<SemanticSearchPage />} />
         <Route path="/keyword-generator" element={<KeywordGeneratorPage />} />
+        <Route path="/analytics" element={<AnalyticsDashboard />} />
         <Route path="/enhanced-search" element={<EnhancedSearchPage />} />
         <Route path="/milvus-database" element={<MilvusDatabasePage />} />
         {/* Fallback route */}

@@ -1,12 +1,15 @@
 import openai
 import json
 import uuid
+import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from fastapi import UploadFile, HTTPException
 import docx
 import PyPDF2
 import io
+
+logger = logging.getLogger(__name__)
 
 from ..models.resume import (
     ParsedResume, ResumeDocument, ResumeSearchRequest, 
@@ -18,96 +21,17 @@ class ResumeParsingService:
     """Service for resume parsing and management"""
     
     def __init__(self):
-        self.openai_client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.openai_client = openai.OpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
     
     async def parse_resume_with_ai(self, text: str) -> ParsedResume:
         """Use OpenAI to parse resume text and extract structured data"""
+        from ..utils.file_parser import parse_resume_with_ai as parse_resume_ai
         try:
-            prompt = f"""
-            Parse the following resume text and extract structured data. Return a JSON object with these exact fields:
-
-            {{
-                "full_name": "Full Name",
-                "email": "email@example.com",
-                "phone": "+1234567890",
-                "linkedin": "https://linkedin.com/in/username",
-                "github": "https://github.com/username",
-                "website": "https://website.com",
-                "summary": "Professional summary paragraph",
-                "skills": [
-                    {{
-                        "name": "Skill Name",
-                        "category": "Programming Languages" | "Frameworks" | "Databases" | "Tools" | "Cloud" | "Other"
-                    }}
-                ],
-                "education": [
-                    {{
-                        "degree": "Degree Name",
-                        "institution": "University Name",
-                        "year": "2020",
-                        "gpa": "3.8",
-                        "location": "City, State"
-                    }}
-                ],
-                "work_experience": [
-                    {{
-                        "title": "Job Title",
-                        "company": "Company Name",
-                        "start_date": "Jan 2020",
-                        "end_date": "Dec 2023",
-                        "location": "City, State",
-                        "description": "Detailed job description",
-                        "achievements": ["Achievement 1", "Achievement 2"],
-                        "technologies": ["Tech 1", "Tech 2"]
-                    }}
-                ],
-                "certifications": [
-                    {{
-                        "name": "Certification Name",
-                        "issuer": "Issuing Organization",
-                        "date": "2020",
-                        "expiry": "2023"
-                    }}
-                ],
-                "languages": [
-                    {{
-                        "language": "English",
-                        "proficiency": "Native" | "Fluent" | "Intermediate" | "Basic"
-                    }}
-                ]
-            }}
-
-            Resume text:
-            {text[:5000]}
-            """
-            
-            response = self.openai_client.chat.completions.create(
-                model=settings.OPENAI_MODEL,
-                messages=[
-                    {"role": "system", "content": "You are an expert resume parser. Extract ALL available information with maximum detail."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=settings.OPENAI_MAX_TOKENS,
-                temperature=settings.OPENAI_TEMPERATURE
-            )
-            
-            parsed_text = response.choices[0].message.content.strip()
-            
-            # Clean up the response to extract JSON
-            if parsed_text.startswith("```json"):
-                parsed_text = parsed_text[7:]
-            if parsed_text.endswith("```"):
-                parsed_text = parsed_text[:-3]
-            
-            parsed_data = json.loads(parsed_text)
-            return ParsedResume(**parsed_data)
-            
-        except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")
-            # Fallback parsing
-            return self._fallback_parse(text)
+            parsed_dict = parse_resume_ai(text)
+            # Convert dict to ParsedResume
+            return ParsedResume(**parsed_dict)
         except Exception as e:
-            print(f"OpenAI parsing error: {e}")
+            logger.error(f"Error parsing resume: {e}")
             return self._fallback_parse(text)
     
     def _fallback_parse(self, text: str) -> ParsedResume:
@@ -136,42 +60,12 @@ class ResumeParsingService:
     
     async def extract_text_from_file(self, file: UploadFile) -> str:
         """Extract text from uploaded file (PDF, DOCX, TXT)"""
+        from ..utils.file_parser import extract_text_from_file as extract_text_util
         try:
             content = await file.read()
-            
-            if file.filename.endswith('.pdf'):
-                return self._extract_pdf_text(content)
-            elif file.filename.endswith(('.docx', '.doc')):
-                return self._extract_docx_text(content)
-            elif file.filename.endswith('.txt'):
-                return content.decode('utf-8')
-            else:
-                raise HTTPException(status_code=400, detail="Unsupported file type")
-                
+            return extract_text_util(content, file.filename or "")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error extracting text: {str(e)}")
-    
-    def _extract_pdf_text(self, content: bytes) -> str:
-        """Extract text from PDF content"""
-        try:
-            pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
-            text = ""
-            for page in pdf_reader.pages:
-                text += page.extract_text() + "\n"
-            return text
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error reading PDF: {str(e)}")
-    
-    def _extract_docx_text(self, content: bytes) -> str:
-        """Extract text from DOCX content"""
-        try:
-            doc = docx.Document(io.BytesIO(content))
-            text = ""
-            for paragraph in doc.paragraphs:
-                text += paragraph.text + "\n"
-            return text
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error reading DOCX: {str(e)}")
     
     async def process_resume_upload(self, file: UploadFile) -> ResumeUploadResponse:
         """Process uploaded resume file"""
@@ -195,15 +89,15 @@ class ResumeParsingService:
                 updated_at=datetime.now()
             )
             
-            # TODO: Store in Milvus database
-            # milvus_stored = await self.store_in_milvus(resume_doc)
+            # Store in Milvus database
+            milvus_stored = await self.store_in_milvus(parsed_data, resume_id, file.filename)
             
             return ResumeUploadResponse(
                 success=True,
                 message="Resume parsed successfully",
                 resume_id=resume_id,
                 parsed_data=parsed_data,
-                milvus_stored=False  # TODO: Implement Milvus storage
+                milvus_stored=milvus_stored
             )
             
         except Exception as e:
@@ -226,8 +120,63 @@ class ResumeParsingService:
     
     async def get_all_resumes(self, limit: int = 50, offset: int = 0) -> List[ResumeDocument]:
         """Get all resumes with pagination"""
-        # TODO: Implement database retrieval
-        return []
+        from ..services.milvus_service import get_resumes_from_milvus
+        try:
+            resumes_data = get_resumes_from_milvus()
+            # Convert to ResumeDocument format
+            resume_docs = []
+            for resume_data in resumes_data[offset:offset+limit]:
+                resume_doc = ResumeDocument(
+                    id=resume_data.get("id", ""),
+                    filename=resume_data.get("file_path", ""),
+                    file_type="application/pdf",
+                    file_size=0,
+                    raw_text=resume_data.get("resumeText", ""),
+                    parsed_data=ParsedResume(
+                        full_name=resume_data.get("name", ""),
+                        email=resume_data.get("email", ""),
+                        phone=resume_data.get("phone", ""),
+                        summary=resume_data.get("summary", ""),
+                        skills=[{"name": s, "category": "Other"} for s in resume_data.get("skills", [])],
+                        education=resume_data.get("education", []),
+                        work_experience=resume_data.get("work_experience", [])
+                    ),
+                    created_at=datetime.fromisoformat(resume_data.get("created_at", datetime.now().isoformat())),
+                    updated_at=datetime.fromisoformat(resume_data.get("updated_at", datetime.now().isoformat()))
+                )
+                resume_docs.append(resume_doc)
+            return resume_docs
+        except Exception as e:
+            logger.error(f"Error getting resumes: {e}")
+            return []
+    
+    async def store_in_milvus(self, parsed_data: ParsedResume, resume_id: str, filename: str = "") -> bool:
+        """Store parsed resume in Milvus database"""
+        try:
+            from ..services.milvus_service import milvus_service
+            
+            # Convert ParsedResume to dict format expected by Milvus
+            resume_data = {
+                "full_name": parsed_data.full_name,
+                "contact": {
+                    "email": parsed_data.email or "",
+                    "phone": parsed_data.phone or "",
+                    "linkedin": parsed_data.linkedin or "",
+                    "github": parsed_data.github or "",
+                    "website": parsed_data.website or ""
+                },
+                "summary": parsed_data.summary or "",
+                "skills": parsed_data.skills or [],
+                "education": parsed_data.education or [],
+                "work_experience": parsed_data.work_experience or [],
+                "file_path": filename
+            }
+            
+            # Store using milvus_service
+            return milvus_service.store_resume_in_milvus(resume_data, resume_id)
+        except Exception as e:
+            logger.error(f"Error storing resume in Milvus: {e}")
+            return False
 
 # Global service instance
 resume_service = ResumeParsingService()

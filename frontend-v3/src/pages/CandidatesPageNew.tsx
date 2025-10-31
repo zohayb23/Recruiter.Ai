@@ -74,8 +74,8 @@ const CandidatesPage: React.FC<CandidatesPageProps> = ({ onNavigate }) => {
 
     fetchCandidates();
     
-    // Set up real-time updates every 30 seconds
-    const interval = setInterval(fetchCandidates, 30000);
+    // Set up real-time updates every 5 minutes
+    const interval = setInterval(fetchCandidates, 300000);
     
     return () => clearInterval(interval);
   }, []);

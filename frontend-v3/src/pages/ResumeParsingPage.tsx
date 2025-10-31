@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Upload,
   FileText,
@@ -60,6 +61,7 @@ interface BulkParseResult {
 }
 
 const ResumeParsingPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'single' | 'bulk'>('single');
   
   // Single Resume Parsing State
@@ -426,41 +428,106 @@ const ResumeParsingPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-semibold text-blue-900 mb-2">Candidate Information</h4>
                         <p className="text-blue-800"><strong>Name:</strong> {parseResult.full_name}</p>
-                        <p className="text-blue-800"><strong>Email:</strong> {parseResult.contact.email}</p>
-                        <p className="text-blue-800"><strong>Phone:</strong> {parseResult.contact.phone}</p>
+                        <p className="text-blue-800"><strong>Email:</strong> {parseResult.contact.email || 'Not provided'}</p>
+                        <p className="text-blue-800"><strong>Phone:</strong> {parseResult.contact.phone || 'Not provided'}</p>
+                        {parseResult.contact.linkedin && (
+                          <p className="text-blue-800"><strong>LinkedIn:</strong> {parseResult.contact.linkedin}</p>
+                        )}
                       </div>
                       <div className="bg-green-50 p-4 rounded-lg">
                         <h4 className="font-semibold text-green-900 mb-2">Experience</h4>
                         <p className="text-green-800"><strong>Work Experience:</strong> {parseResult.work_experience.length} positions</p>
                         <p className="text-green-800"><strong>Education:</strong> {parseResult.education.length} entries</p>
                         <p className="text-green-800"><strong>Skills:</strong> {parseResult.skills.length} skills</p>
+                        <p className="text-green-800"><strong>Certifications:</strong> {parseResult.certifications.length} certifications</p>
+                      </div>
+                      <div className="bg-purple-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-purple-900 mb-2">File Information</h4>
+                        <p className="text-purple-800"><strong>Resume ID:</strong> {parseResult.resume_id}</p>
+                        <p className="text-purple-800"><strong>File Path:</strong> {parseResult.file_path}</p>
+                        <p className="text-purple-800"><strong>Parsed:</strong> {new Date(parseResult.created_at).toLocaleString()}</p>
                       </div>
                     </div>
 
-                    {parseResult.summary && (
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-semibold text-gray-900 mb-2">Summary</h4>
-                        <p className="text-gray-700">{parseResult.summary}</p>
+                    {/* Skills Preview */}
+                    {parseResult.skills && parseResult.skills.length > 0 && (
+                      <div className="bg-yellow-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-yellow-900 mb-2">Extracted Skills</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {parseResult.skills.slice(0, 10).map((skill: any, index: number) => (
+                            <span key={index} className="px-3 py-1 bg-yellow-200 text-yellow-800 rounded-full text-sm">
+                              {skill.name || skill}
+                            </span>
+                          ))}
+                          {parseResult.skills.length > 10 && (
+                            <span className="px-3 py-1 bg-yellow-300 text-yellow-900 rounded-full text-sm">
+                              +{parseResult.skills.length - 10} more
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
 
-                    <div className="flex justify-end space-x-3">
+                    {/* Work Experience Preview */}
+                    {parseResult.work_experience && parseResult.work_experience.length > 0 && (
+                      <div className="bg-indigo-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-indigo-900 mb-2">Work Experience Preview</h4>
+                        <div className="space-y-2">
+                          {parseResult.work_experience.slice(0, 3).map((exp: any, index: number) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              <p className="font-medium text-indigo-900">{exp.title || exp.position || 'Position'}</p>
+                              <p className="text-sm text-indigo-700">{exp.company || 'Company'}</p>
+                              {exp.duration && <p className="text-xs text-indigo-600">{exp.duration}</p>}
+                            </div>
+                          ))}
+                          {parseResult.work_experience.length > 3 && (
+                            <p className="text-sm text-indigo-700 italic">
+                              +{parseResult.work_experience.length - 3} more positions
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {parseResult.summary && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-gray-900 mb-2">Full Summary</h4>
+                        <div className="text-gray-700 max-h-96 overflow-y-auto">
+                          <p className="whitespace-pre-wrap leading-relaxed">{parseResult.summary}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center">
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={clearAll}
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          Parse Another
+                        </button>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                        >
+                          <RefreshCw size={16} />
+                          <span>Start Over</span>
+                        </button>
+                      </div>
+                      
                       <button
-                        onClick={clearAll}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        onClick={() => {
+                          // Navigate to candidate details page using React Router
+                          navigate(`/candidate-details/${parseResult.resume_id}`);
+                        }}
+                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
                       >
-                        Parse Another
-                      </button>
-                      <button
-                        onClick={() => window.location.reload()}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                      >
-                        <RefreshCw size={16} />
-                        <span>Start Over</span>
+                        <Eye size={16} />
+                        <span>View Candidate Details</span>
                       </button>
                     </div>
                   </div>

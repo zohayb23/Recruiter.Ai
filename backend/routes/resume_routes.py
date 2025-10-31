@@ -20,40 +20,81 @@ async def health_check():
         "version": "1.0.0"
     }
 
-@router.post("/parse", response_model=ResumeUploadResponse)
+@router.post("/parse")
 async def parse_resume(file: UploadFile = File(...)):
     """
     Parse uploaded resume file (PDF, DOCX, TXT) and extract structured data using AI
+    EXACT COPY of monolithic backend implementation
     """
     try:
-        logger.info(f"Processing resume upload: {file.filename}")
+        import os
+        import uuid
+        from datetime import datetime
+        from ..utils.file_parser import extract_text_from_file, parse_resume_with_ai
+        from ..services.milvus_service import store_resume_in_milvus
+        from ..storage import stored_resumes
         
-        # Validate file type
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="No filename provided")
+        print(f"Starting resume parsing for: {file.filename}")
         
-        allowed_extensions = ['.pdf', '.docx', '.doc', '.txt']
-        if not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Unsupported file type. Allowed types: {', '.join(allowed_extensions)}"
-            )
+        file_content = await file.read()
+        text = extract_text_from_file(file_content, file.filename)
         
-        # Process the file
-        result = await resume_service.process_resume_upload(file)
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="Could not extract text from file")
         
-        if result.success:
-            logger.info(f"Successfully parsed resume: {result.resume_id}")
-        else:
-            logger.error(f"Failed to parse resume: {result.message}")
+        parsed_data = parse_resume_with_ai(text)
+        resume_id = str(uuid.uuid4())
         
-        return result
+        current_time = datetime.now().isoformat()
         
-    except HTTPException:
-        raise
+        # Save the uploaded file to docx_resumes directory
+        os.makedirs("docx_resumes", exist_ok=True)
+        saved_filename = f"{resume_id}_{file.filename}"
+        file_path = f"docx_resumes/{saved_filename}"
+        
+        with open(file_path, "wb") as f:
+            f.write(file_content)
+        
+        print(f"✅ File saved to: {file_path}")
+        
+        # Store in memory
+        resume_data = {
+            "resume_id": resume_id,
+            "full_name": parsed_data.get("full_name", ""),
+            "contact": {
+                "email": parsed_data.get("email", ""),
+                "phone": parsed_data.get("phone", ""),
+                "linkedin": parsed_data.get("linkedin"),
+                "github": parsed_data.get("github"),
+                "website": parsed_data.get("website")
+            },
+            "education": parsed_data.get("education", []),
+            "work_experience": parsed_data.get("work_experience", []),
+            "skills": parsed_data.get("skills", []),
+            "file_path": saved_filename,  # Store the saved filename
+            "created_at": current_time,
+            "summary": parsed_data.get("summary"),
+            "certifications": parsed_data.get("certifications", []),
+            "languages": parsed_data.get("languages", [])
+        }
+        
+        stored_resumes.append(resume_data)
+        
+        # Store in Milvus
+        store_resume_in_milvus(resume_data, resume_id)
+        
+        print(f"✅ Resume stored with ID: {resume_id}")
+        print(f"✅ Stored data for: {resume_data['full_name']}")
+        print(f"✅ Total resumes in memory: {len(stored_resumes)}")
+        
+        print(f"Resume parsing completed for: {resume_data['full_name']}")
+        return resume_data
+        
     except Exception as e:
-        logger.error(f"Unexpected error parsing resume: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        print(f"Error parsing resume: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to parse resume: {str(e)}")
 
 @router.get("/stored-resumes")
 async def get_stored_resumes(limit: int = 50, offset: int = 0):
@@ -61,16 +102,49 @@ async def get_stored_resumes(limit: int = 50, offset: int = 0):
     Get all stored resumes with pagination
     """
     try:
-        resumes = await resume_service.get_all_resumes(limit=limit, offset=offset)
+        from ..services.milvus_service import get_resumes_from_milvus
+        
+        # Get resumes from Milvus in the format the frontend expects
+        resumes_data = get_resumes_from_milvus()
+        
+        # Transform to match frontend expectations - flatten structure
+        flattened_resumes = []
+        for resume in resumes_data[offset:offset+limit]:
+            flattened = {
+                "resume_id": resume.get("id", ""),
+                "id": resume.get("id", ""),
+                "full_name": resume.get("name", ""),
+                "email": resume.get("email", ""),
+                "phone": resume.get("phone", ""),
+                "contact": {
+                    "email": resume.get("email", ""),
+                    "phone": resume.get("phone", ""),
+                    "linkedin": None,
+                    "github": None,
+                    "website": None
+                },
+                "skills": resume.get("skills", []),
+                "education": resume.get("education", []),
+                "work_experience": resume.get("work_experience", []),
+                "summary": resume.get("summary", ""),
+                "file_path": resume.get("file_path", ""),
+                "created_at": resume.get("created_at", ""),
+                "certifications": [],
+                "languages": []
+            }
+            flattened_resumes.append(flattened)
+        
         return {
-            "resumes": resumes,
-            "total": len(resumes),
+            "resumes": flattened_resumes,
+            "total": len(flattened_resumes),
             "limit": limit,
             "offset": offset,
-            "message": f"Found {len(resumes)} resumes"
+            "message": f"Found {len(flattened_resumes)} resumes"
         }
     except Exception as e:
         logger.error(f"Error retrieving resumes: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error retrieving resumes: {str(e)}")
 
 @router.get("/resume/{resume_id}")
@@ -107,16 +181,20 @@ async def search_resumes(request: ResumeSearchRequest):
         raise HTTPException(status_code=500, detail=f"Error searching resumes: {str(e)}")
 
 @router.post("/parse-text")
-async def parse_resume_text(text: str):
+async def parse_resume_text(request: dict):
     """
     Parse resume text directly (without file upload)
     """
     try:
+        text = request.get("text", "")
+        if not text:
+            raise HTTPException(status_code=400, detail="Text field is required")
+        
         parsed_data = await resume_service.parse_resume_with_ai(text)
         return {
             "success": True,
             "message": "Resume text parsed successfully",
-            "parsed_data": parsed_data
+            "parsed_data": parsed_data.dict() if hasattr(parsed_data, 'dict') else parsed_data
         }
     except Exception as e:
         logger.error(f"Error parsing resume text: {str(e)}")

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -51,7 +51,7 @@ class Language(BaseModel):
 class ParsedResume(BaseModel):
     """Structured resume data parsed from raw text"""
     full_name: str
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     linkedin: Optional[str] = None
     github: Optional[str] = None

@@ -21,7 +21,7 @@ class Settings:
     OPENAI_TEMPERATURE: float = 0.1
     
     # Milvus Database Settings
-    MILVUS_HOST: str = os.getenv("MILVUS_HOST", "34.60.125.249")
+    MILVUS_HOST: str = os.getenv("MILVUS_HOST", "34.135.232.156")
     MILVUS_PORT: str = os.getenv("MILVUS_PORT", "19530")
     MILVUS_COLLECTION_RESUMES: str = "resumes"
     MILVUS_COLLECTION_JOBS: str = "job_descriptions"

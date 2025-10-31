@@ -15,7 +15,8 @@ import {
   Mail,
   UserCheck,
   Activity,
-  Clock
+  Clock,
+  RefreshCw
 } from 'lucide-react';
 import Tooltip from '../components/ui/Tooltip';
 import HelpText from '../components/ui/HelpText';
@@ -85,10 +86,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
   // Fetch comprehensive dashboard data
-  useEffect(() => {
-    const fetchDashboardData = async () => {
+  const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
         setError(null);
@@ -199,13 +200,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         });
       } finally {
         setIsLoading(false);
+        setLastUpdated(new Date().toLocaleTimeString());
       }
     };
 
+  // Fetch data on component mount and set up interval
+  useEffect(() => {
     fetchDashboardData();
     
-    // Set up real-time updates every 30 seconds
-    const interval = setInterval(fetchDashboardData, 30000);
+    // Set up real-time updates every 5 minutes (less frequent)
+    const interval = setInterval(fetchDashboardData, 300000);
     return () => clearInterval(interval);
   }, []);
 
@@ -348,10 +352,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div>
             <h1 className="text-3xl font-bold mb-2">Welcome back, John Smith!</h1>
             <p className="text-primary-100 text-lg">IT Recruiter • Department: IT • Jan - Jun '24</p>
+            {lastUpdated && (
+              <p className="text-primary-200 text-sm mt-2">
+                Last updated: {lastUpdated}
+              </p>
+            )}
           </div>
-          <div className="hidden md:block">
-            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-              <Users size={32} className="text-white" />
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={fetchDashboardData}
+              disabled={isLoading}
+              className="bg-white/20 hover:bg-white/30 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="text-sm font-medium">Refresh</span>
+            </button>
+            <div className="hidden md:block">
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
+                <Users size={32} className="text-white" />
+              </div>
             </div>
           </div>
         </div>
@@ -384,6 +403,153 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="flex items-center space-x-3">
             <div className={`w-3 h-3 rounded-full ${backendStatus.massMailing ? 'bg-success-500' : 'bg-gray-300'}`}></div>
             <span className="text-sm text-gray-600">Email Campaigns</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Create Job Listing */}
+          <div 
+            className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-6 flex flex-col items-center justify-center hover:from-primary-100 hover:to-primary-200 transition-all duration-200 cursor-pointer border border-primary-200"
+            onClick={() => onNavigate?.('job-creation')}
+          >
+            <div className="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center mb-4">
+              <Plus size={24} className="text-white" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">Create Job</h4>
+            <p className="text-gray-600 text-sm text-center">Post a new job opening</p>
+          </div>
+
+          {/* Resume Parser */}
+          <div 
+            className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 flex flex-col items-center justify-center hover:from-blue-100 hover:to-blue-200 transition-all duration-200 cursor-pointer border border-blue-200"
+            onClick={() => onNavigate?.('resume-parsing')}
+          >
+            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
+              <FileText size={24} className="text-white" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">Parse Resume</h4>
+            <p className="text-gray-600 text-sm text-center">AI-powered resume analysis</p>
+          </div>
+
+          {/* View Candidates */}
+          <div 
+            className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 flex flex-col items-center justify-center hover:from-green-100 hover:to-green-200 transition-all duration-200 cursor-pointer border border-green-200"
+            onClick={() => onNavigate?.('candidates')}
+          >
+            <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
+              <Users size={24} className="text-white" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">Candidates</h4>
+            <p className="text-gray-600 text-sm text-center">Browse candidate profiles</p>
+          </div>
+
+          {/* Mass Mailing */}
+          <div 
+            className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 flex flex-col items-center justify-center hover:from-orange-100 hover:to-orange-200 transition-all duration-200 cursor-pointer border border-orange-200"
+            onClick={() => onNavigate?.('mailing')}
+          >
+            <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
+              <Send size={24} className="text-white" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">Email Campaign</h4>
+            <p className="text-gray-600 text-sm text-center">Send bulk emails</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h3>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <Users size={20} className="text-green-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">New candidate applied</p>
+              <p className="text-xs text-gray-500">Sarah Johnson applied for Software Engineer position</p>
+            </div>
+            <span className="text-xs text-gray-500">2 hours ago</span>
+          </div>
+          
+          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <FileText size={20} className="text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">Resume parsed</p>
+              <p className="text-xs text-gray-500">AI successfully parsed resume for Michael Chen</p>
+            </div>
+            <span className="text-xs text-gray-500">4 hours ago</span>
+          </div>
+          
+          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+              <Send size={20} className="text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">Email campaign sent</p>
+              <p className="text-xs text-gray-500">"Software Engineer Opportunities" sent to 150 candidates</p>
+            </div>
+            <span className="text-xs text-gray-500">1 day ago</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Features */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Additional Features</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Candidate Scoring */}
+          <div 
+            className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+            onClick={() => onNavigate?.('candidate-scoring')}
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Target size={24} className="text-purple-600" />
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900">Candidate Scoring</h4>
+                <p className="text-gray-600 text-sm">AI-powered evaluation</p>
+              </div>
+            </div>
+          </div>
+
+          {/* CRM Pipeline */}
+          <div 
+            className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+            onClick={() => onNavigate?.('pipeline-crm')}
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <BarChart3 size={24} className="text-indigo-600" />
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900">CRM Pipeline</h4>
+                <p className="text-gray-600 text-sm">Manage candidate stages</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Semantic Search */}
+          <div 
+            className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+            onClick={() => onNavigate?.('semantic-search')}
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                <Search size={24} className="text-teal-600" />
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900">Semantic Search</h4>
+                <p className="text-gray-600 text-sm">AI-powered search</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -670,60 +836,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Create Job Listing */}
-          <div 
-            className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-6 flex flex-col items-center justify-center hover:from-primary-100 hover:to-primary-200 transition-all duration-200 cursor-pointer border border-primary-200"
-            onClick={() => onNavigate?.('job-creation')}
-          >
-            <div className="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center mb-4">
-              <Plus size={24} className="text-white" />
-            </div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Create Job</h4>
-            <p className="text-gray-600 text-sm text-center">Post a new job opening</p>
-          </div>
-
-          {/* Resume Parser */}
-          <div 
-            className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 flex flex-col items-center justify-center hover:from-blue-100 hover:to-blue-200 transition-all duration-200 cursor-pointer border border-blue-200"
-            onClick={() => onNavigate?.('resume-parsing')}
-          >
-            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
-              <FileText size={24} className="text-white" />
-            </div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Parse Resume</h4>
-            <p className="text-gray-600 text-sm text-center">AI-powered resume analysis</p>
-          </div>
-
-          {/* View Candidates */}
-          <div 
-            className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 flex flex-col items-center justify-center hover:from-green-100 hover:to-green-200 transition-all duration-200 cursor-pointer border border-green-200"
-            onClick={() => onNavigate?.('candidates')}
-          >
-            <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
-              <Users size={24} className="text-white" />
-            </div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Candidates</h4>
-            <p className="text-gray-600 text-sm text-center">Browse candidate profiles</p>
-          </div>
-
-          {/* Mass Mailing */}
-          <div 
-            className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 flex flex-col items-center justify-center hover:from-orange-100 hover:to-orange-200 transition-all duration-200 cursor-pointer border border-orange-200"
-            onClick={() => onNavigate?.('mailing')}
-          >
-            <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
-              <Send size={24} className="text-white" />
-            </div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Email Campaign</h4>
-            <p className="text-gray-600 text-sm text-center">Send bulk emails</p>
-          </div>
-        </div>
-      </div>
-
       {/* Additional Features */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Candidate Scoring */}
@@ -771,45 +883,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <h4 className="text-lg font-semibold text-gray-900">Semantic Search</h4>
               <p className="text-gray-600 text-sm">AI-powered search</p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h3>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <Users size={20} className="text-green-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">New candidate applied</p>
-              <p className="text-xs text-gray-500">Sarah Johnson applied for Software Engineer position</p>
-            </div>
-            <span className="text-xs text-gray-500">2 hours ago</span>
-          </div>
-          
-          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <FileText size={20} className="text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Resume parsed</p>
-              <p className="text-xs text-gray-500">AI successfully parsed resume for Michael Chen</p>
-            </div>
-            <span className="text-xs text-gray-500">4 hours ago</span>
-          </div>
-          
-          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              <Send size={20} className="text-orange-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Email campaign sent</p>
-              <p className="text-xs text-gray-500">"Software Engineer Opportunities" sent to 150 candidates</p>
-            </div>
-            <span className="text-xs text-gray-500">1 day ago</span>
           </div>
         </div>
       </div>
