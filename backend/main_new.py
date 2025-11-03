@@ -14,7 +14,7 @@ from .routes import (
     resume_routes, job_routes, milvus_routes, candidate_routes, 
     crm_routes, chat_routes, evaluation_routes, search_routes,
     interview_routes, job_category_routes, analytics_routes,
-    all_remaining_routes
+    all_remaining_routes, email_routes
 )
 
 # Configure logging
@@ -72,6 +72,7 @@ app.include_router(all_remaining_routes.automation_router)
 app.include_router(all_remaining_routes.engagement_router)
 app.include_router(all_remaining_routes.realtime_router)
 app.include_router(all_remaining_routes.evaluation_router_extra)
+app.include_router(email_routes.router)
 
 @app.get("/")
 async def root():

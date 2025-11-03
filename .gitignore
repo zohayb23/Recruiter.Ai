@@ -60,3 +60,9 @@ backend-full/
 cache/
 uploads/
 *.cache
+
+# Gmail agent files
+gmail_agent.log
+gmail_job_agent.log
+processed_emails.json
+processed_job_emails.json

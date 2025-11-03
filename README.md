@@ -77,6 +77,38 @@ Recruiter.AI is a comprehensive, AI-powered recruitment platform that combines i
 - ✅ **Tracking Pixels**: Email open and click tracking
 - ✅ **Performance Metrics**: Detailed analytics and reporting
 
+### 🤖 **NEW: Automated Gmail Agents**
+
+#### 📧 General Email Agent
+- ✅ **Fully Automated Email Processing**: 24/7 monitoring of Gmail inbox
+- ✅ **AI-Powered Parsing**: GPT-4 intelligently categorizes and extracts email data
+- ✅ **Zero Manual Intervention**: Automatic processing without clicks
+- ✅ **Smart Categorization**: Job applications, inquiries, networking, spam detection
+- ✅ **Resume Detection**: Automatically identifies and flags resume submissions
+- ✅ **Priority Assignment**: High/medium/low priority based on email content
+- ✅ **Candidate Info Extraction**: Extracts names, skills, experience from emails
+- ✅ **Milvus Integration**: Stores all emails in searchable "emails" collection
+- ✅ **Semantic Search**: Find emails by meaning, not just keywords
+- ✅ **Email Analytics**: Track application volumes, trends, and patterns
+- ✅ **Duplicate Prevention**: Tracks processed emails to avoid reprocessing
+- ✅ **API Endpoints**: Full REST API for email management and search
+- 📚 **Documentation**: Complete setup guide in `GMAIL_AGENT_README.md`
+
+#### 💼 Job Description Agent
+- ✅ **Automated Job Extraction**: Monitors Gmail for job description emails
+- ✅ **Smart Job Detection**: AI identifies if email contains a job posting
+- ✅ **Structured Data Extraction**: Extracts job details matching Milvus schema
+- ✅ **Complete Field Mapping**: Title, company, department, location, skills, benefits
+- ✅ **Location Type Detection**: Automatically determines remote/in-person/hybrid
+- ✅ **Experience Level Parsing**: Entry/Mid/Senior/Lead/Executive classification
+- ✅ **Skills Array Extraction**: Required and preferred skills as JSON arrays
+- ✅ **Company Information**: Extracts company name and description
+- ✅ **Sender Tracking**: Captures sender name and contact information
+- ✅ **OpenAI Embeddings**: Generates 1536-dim vectors for semantic search
+- ✅ **Milvus Storage**: Stores in "job_descriptions" collection
+- ✅ **Schema Compliance**: 100% match with existing job_descriptions schema
+- 📚 **Documentation**: Complete guide in `GMAIL_JOB_AGENT_README.md`
+
 ### 🔍 **Advanced Search & Analytics**
 - ✅ **Keyword Generator**: Create boolean search queries for job searches
   - Job title-based keyword generation
@@ -496,15 +528,38 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🎯 Quick Start Commands
 
+### Backend Services
 ```bash
-# Start all services locally
-python3 mass_mailing_backend.py &
-python3 pipeline_crm_backend.py &
-python3 complete_backend_with_milvus.py &
+# Start modular backend (recommended)
+cd backend
+python3 -m main_new
 
-# Start frontend
+# Start Gmail agents (automated email processing)
+# Set environment variables first:
+export GMAIL_USER="your-email@gmail.com"
+export GMAIL_APP_PASSWORD="your-app-password"
+export OPENAI_API_KEY="your-openai-key"
+export MILVUS_HOST="34.135.232.156"
+export MILVUS_PORT="19530"
+
+# Start general email agent
+nohup python3 -m backend.services.gmail_agent > gmail_agent.log 2>&1 &
+
+# Start job description agent
+nohup python3 -m backend.services.gmail_job_agent > gmail_job_agent.log 2>&1 &
+```
+
+### Frontend
+```bash
+# Start frontend-v3 (latest)
+cd frontend-v3 && npm run dev
+
+# Or frontend-v2
 cd frontend-v2 && npm run dev
+```
 
+### Deployment
+```bash
 # Deploy to production
 ./deploy_production_gcp.sh
 ```
